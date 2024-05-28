@@ -1,0 +1,58 @@
+Goal
+The goal is to develop an end-to-end multiagent tool that converts a collection of SAS scripts and macro scripts into Python code. The SAS scripts are located in a folder provided by the user and typically ordered by numbers in their filenames. The tool should handle large sets of scripts and macros by maintaining metadata about global and local variables, macros, and their parameters. The conversion process should be done with minimal human intervention and without a user interface, operating through command-line instructions.
+
+Key Considerations
+Script Management: The tool should process SAS scripts sequentially, managing metadata to ensure continuity and correctness.
+Metadata Handling: It should track global variables, local variables, macros, and their parameters, along with the flow of data between scripts.
+Data Location Replacement: References to data source files in SAS scripts should be replaced with a “data” folder in the Python code.
+Code Transformation: The Python code should include extracts from the SAS code, followed by a detailed description of the logic, and the equivalent Python code replicating the functionality.
+Output Consistency: The tool should acknowledge potential differences in output due to different parameters used in third-party statistical libraries in Python compared to SAS functions.
+Agent-Based Approach: The task should be divided among multiple agents, each with a specific role in the conversion process, working together based on detailed system prompts, tasks, and descriptions.
+Automation: The entire process should rely on the internal knowledge of a large language model (LLM), with minimal human intervention.
+Detailed Steps
+Script and Metadata Extraction:
+
+Read and parse each SAS script in the folder.
+Extract and store metadata such as global variables, local variables, macros, and their parameters.
+Sequential Processing:
+
+Process each SAS script in order, maintaining context using the extracted metadata.
+Ensure data flow consistency across scripts.
+Conversion Logic:
+
+For each SAS script, extract code segments and translate them into Python.
+Add detailed descriptions of the logic and functionality of each SAS code segment.
+Generate the corresponding Python code that replicates the functionality.
+Agent Tasks and Prompts:
+
+Define specific tasks for each agent involved in the conversion process.
+Create detailed system prompts and descriptions for each agent to ensure accurate and consistent conversion.
+Framework and Automation:
+
+Develop an auto-generation framework to program the agents based on the defined tasks and system prompts.
+Ensure the framework is capable of handling the entire conversion process with minimal human intervention.
+Sample Agents and Their Roles
+Metadata Extraction Agent:
+
+Task: Parse SAS scripts to extract global and local variables, macros, and their parameters.
+System Prompt: "Extract and store metadata from SAS scripts, including variables and macro definitions."
+Sequential Processing Agent:
+
+Task: Process SAS scripts in order, maintaining metadata context and ensuring data flow consistency.
+System Prompt: "Process each SAS script sequentially, updating metadata and tracking data flow."
+Code Conversion Agent:
+
+Task: Convert SAS code segments into Python, adding detailed descriptions of the logic and functionality.
+System Prompt: "For each SAS code segment, provide a detailed description and generate equivalent Python code."
+Validation Agent:
+
+Task: Validate the converted Python code to ensure functional consistency with the original SAS scripts.
+System Prompt: "Validate the Python code against the original SAS scripts for functional consistency."
+Automation Framework Agent:
+
+Task: Manage the orchestration of all agents, ensuring seamless conversion with minimal human intervention.
+System Prompt: "Coordinate the tasks of all agents to ensure an end-to-end conversion process."
+Next Steps
+Approval: Review and approve this detailed understanding and outline.
+Agent Development: Generate the detailed system prompts, tasks, and descriptions for each agent.
+Implementation: Develop the multiagent framework to program and coordinate the agents.
