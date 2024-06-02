@@ -4,6 +4,7 @@ import re
 import os
 import re
 
+
 def load_and_sort_files(folder_path, extension='sas', exclude_subfolders=[]):
     """
     Load files with a specific extension from the specified folder and sort them in ascending order.
@@ -19,25 +20,37 @@ def load_and_sort_files(folder_path, extension='sas', exclude_subfolders=[]):
         list: A sorted list of file paths.
     """
     def extract_sort_key(filename):
-        # Remove the extension
         base_name = filename.lower().rsplit('.', 1)[0]
-        
+
         # Extract parts from the filename considering "_" and "."
         parts = re.split(r'[_\.]', base_name)
-        
+
         # Function to convert parts into sorting keys
         def numeric_or_string(value):
             return int(value) if value.isdigit() else value
-        
-        # Determine sorting keys from filename parts
-        sort_key = [numeric_or_string(part) for part in parts]
-        return sort_key
+
+        # Separate numbers at the beginning and end, and other parts
+        sort_key = []
+        if parts[0].isdigit():
+            sort_key.append(numeric_or_string(parts[0]))
+            parts = parts[1:]
+        if parts and parts[-1].isdigit():
+            last_part = parts.pop()
+        else:
+            last_part = None
+
+        sort_key.extend(numeric_or_string(part) for part in parts)
+
+        if last_part is not None:
+            sort_key.append(numeric_or_string(last_part))
+
+        return tuple(sort_key)
 
     # Collect all files with the specified extension, excluding specified subfolders
     matched_files = []
     for root, dirs, files in os.walk(folder_path):
         # Remove excluded subfolders from dirs to prevent os.walk from traversing them
-        dirs[:] = [d for d in dirs if os.path.join(root, d) not in exclude_subfolders]
+        dirs[:] = [d for d in dirs if os.path.relpath(os.path.join(root, d), folder_path) not in exclude_subfolders]
         matched_files.extend(
             os.path.join(root, file) for file in files if file.lower().endswith(f'.{extension}')
         )
