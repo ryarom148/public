@@ -1,7 +1,10 @@
 import os
 import re
 
-def load_and_sort_files(folder_path, extension='sas', include_subfolders=False):
+import os
+import re
+
+def load_and_sort_files(folder_path, extension='sas', exclude_subfolders=[]):
     """
     Load files with a specific extension from the specified folder and sort them in ascending order.
     Sorting is done based on numerical order if numbers are present at the beginning or end of the filename,
@@ -10,7 +13,7 @@ def load_and_sort_files(folder_path, extension='sas', include_subfolders=False):
     Args:
         folder_path (str): The path to the folder containing the files.
         extension (str): The file extension to filter by (default is 'sas').
-        include_subfolders (bool): Whether to include files from subfolders (default is False).
+        exclude_subfolders (list): List of subfolder names to exclude from processing (default is []).
 
     Returns:
         list: A sorted list of file paths.
@@ -27,20 +30,17 @@ def load_and_sort_files(folder_path, extension='sas', include_subfolders=False):
             return int(value) if value.isdigit() else value
         
         # Determine sorting keys from filename parts
-        start_key = numeric_or_string(parts[0]) if parts[0].isdigit() else parts[0]
-        end_key = numeric_or_string(parts[-1]) if parts[-1].isdigit() else parts[-1]
-        middle_keys = [numeric_or_string(part) for part in parts[1:-1]]
-        
-        return [start_key] + middle_keys + [end_key]
+        sort_key = [numeric_or_string(part) for part in parts]
+        return sort_key
 
-    # Collect all files with the specified extension
+    # Collect all files with the specified extension, excluding specified subfolders
     matched_files = []
     for root, dirs, files in os.walk(folder_path):
+        # Remove excluded subfolders from dirs to prevent os.walk from traversing them
+        dirs[:] = [d for d in dirs if os.path.join(root, d) not in exclude_subfolders]
         matched_files.extend(
             os.path.join(root, file) for file in files if file.lower().endswith(f'.{extension}')
         )
-        if not include_subfolders:
-            break
 
     # Sort files based on their sort key
     sorted_files = sorted(matched_files, key=lambda file: extract_sort_key(os.path.basename(file)))
@@ -48,9 +48,11 @@ def load_and_sort_files(folder_path, extension='sas', include_subfolders=False):
     return sorted_files
 
 # Example usage:
-# folder_path = 'path/to/your/folder'
-# sorted_files = load_and_sort_files(folder_path, extension='sas', include_subfolders=True)
-# print(sorted_files)
+#folder_path = 'path/to/your/folder'
+#exclude_subfolders = ['path/to/your/folder/macros']
+#sorted_files = load_and_sort_files(folder_path, extension='sas', exclude_subfolders=exclude_subfolders)
+#print(sorted_files)
+
 import re
 import json
 
