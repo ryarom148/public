@@ -45,6 +45,38 @@ def load_and_sort_files(folder_path, extension='sas', exclude_subfolders=[]):
             sort_key.append(numeric_or_string(last_part))
 
         return tuple(sort_key)
+    def sort_key(file_name):
+        base_name, extension = os.path.splitext(file_name)
+        
+        numeric_parts = []
+        alpha_parts = []
+        
+        parts = re.split(r'[._]', base_name)
+        
+        if len(parts) == 1:
+            if base_name.isdigit():
+                numeric_parts.append(int(base_name))
+            else:
+                alpha_parts.append(base_name)
+        else:
+            for part in parts:
+                if part.isdigit():
+                    numeric_parts.append(int(part))
+                else:
+                    alpha_parts.append(part)
+            
+            numeric_parts_end = []
+            alpha_parts_end = []
+            
+            if len(numeric_parts) > 0 and numeric_parts[-1] == int(parts[-1]):
+                numeric_parts_end = [numeric_parts.pop()]
+            
+            if len(alpha_parts) > 0 and alpha_parts[-1] == parts[-1]:
+                alpha_parts_end = [alpha_parts.pop()]
+        
+        transformed_parts = numeric_parts + alpha_parts + numeric_parts_end + alpha_parts_end
+        
+        return transformed_parts
 
     # Collect all files with the specified extension, excluding specified subfolders
     matched_files = []
