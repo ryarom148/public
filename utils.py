@@ -46,37 +46,39 @@ def load_and_sort_files(folder_path, extension='sas', exclude_subfolders=[]):
 
         return tuple(sort_key)
     def sort_key(file_name):
-        base_name, extension = os.path.splitext(file_name)
-        
-        numeric_parts = []
-        alpha_parts = []
-        
-        parts = re.split(r'[._]', base_name)
-        
-        if len(parts) == 1:
-            if base_name.isdigit():
-                numeric_parts.append(int(base_name))
-            else:
-                alpha_parts.append(base_name)
+    base_name, extension = os.path.splitext(file_name)
+    
+    numeric_parts = []
+    alpha_parts = []
+    
+    parts = re.split(r'([._])', base_name)
+    
+    if len(parts) == 1:
+        if base_name.isdigit():
+            numeric_parts.append((int(base_name), ''))
         else:
-            for part in parts:
-                if part.isdigit():
-                    numeric_parts.append(int(part))
+            alpha_parts.append((base_name, ''))
+    else:
+        for i in range(0, len(parts), 2):
+            part = parts[i]
+            separator = parts[i + 1] if i + 1 < len(parts) else ''
+            
+            numeric_part = ''
+            alpha_part = ''
+            
+            for char in part:
+                if char.isdigit():
+                    numeric_part += char
                 else:
-                    alpha_parts.append(part)
+                    alpha_part += char
             
-            numeric_parts_end = []
-            alpha_parts_end = []
+            if numeric_part:
+                numeric_parts.append((int(numeric_part), separator))
             
-            if len(numeric_parts) > 0 and numeric_parts[-1] == int(parts[-1]):
-                numeric_parts_end = [numeric_parts.pop()]
-            
-            if len(alpha_parts) > 0 and alpha_parts[-1] == parts[-1]:
-                alpha_parts_end = [alpha_parts.pop()]
-        
-        transformed_parts = numeric_parts + alpha_parts + numeric_parts_end + alpha_parts_end
-        
-        return transformed_parts
+            if alpha_part:
+                alpha_parts.append((alpha_part, separator))
+    
+    return numeric_parts + alpha_parts
 
     # Collect all files with the specified extension, excluding specified subfolders
     matched_files = []
