@@ -1,0 +1,107 @@
+import logging
+import threading
+import time
+from rich.console import Console
+from rich.logging import RichHandler
+from rich.progress import Progress, TaskID
+from rich.panel import Panel
+from rich.text import Text
+from typing import Optional, Dict, List
+
+class BaseAgent:
+    def __init__(self, name: str, model: str = "gpt-4", debug: bool = False,
+                 progress: Optional[Progress] = None):
+        self.name = name
+        self.model = model
+        self.debug = debug
+        self.logs: List[str] = []
+        self.tasks: Dict[str, TaskID] = {}
+
+        # Shared progress
+        self.progress: Progress = progress or Progress()
+
+        # Separate consoles for logs/progress and results
+        self.logs_progress_console = Console()
+        self.results_console = Console()
+
+        self.logger = self._setup_logger()
+        self.stop_event = threading.Event()
+
+    def _setup_logger(self) -> logging.Logger:
+        logger = logging.getLogger(self.name)
+        logger.setLevel(logging.DEBUG if self.debug else logging.INFO)
+        if not logger.handlers:
+            handler = RichHandler(console=self.logs_progress_console, show_time=False, show_path=False)
+            handler.setFormatter(logging.Formatter("%(message)s"))
+            logger.addHandler(handler)
+        return logger
+
+    def start_displays(self):
+        self.display_thread = threading.Thread(target=self._run_logs_progress_display)
+        self.display_thread.start()
+
+    def _run_logs_progress_display(self):
+        while not self.stop_event.is_set():
+            self._update_logs_progress_display()
+            time.sleep(0.25)
+
+    def _update_logs_progress_display(self):
+        progress_panel = Panel(self.progress, title="Progress", border_style="blue")
+        log_content = Text("\n".join(self.logs[-1000:]))  # Display last 1000 logs
+        log_panel = Panel(log_content, title="Logs", border_style="green")
+        
+        self.logs_progress_console.clear()
+        self.logs_progress_console.print(progress_panel)
+        self.logs_progress_console.print(log_panel)
+
+    def log(self, message: str, level: str = "info"):
+        getattr(self.logger, level)(message)
+        self.logs.append(f"[{level.upper()}] {message}")
+
+    def add_task(self, name: str, total: float) -> TaskID:
+        task_id = self.progress.add_task(name, total=total)
+        self.tasks[name] = task_id
+        return task_id
+
+    def update_progress(self, task_name: str, advance: float = 1):
+        if task_name in self.tasks:
+            self.progress.update(self.tasks[task_name], advance=advance)
+
+    def display_results(self, content):
+        if isinstance(content, Panel):
+            self.results_console.print(content)
+        else:
+            self.results_console.print(Panel(str(content), title="Results", border_style="red"))
+
+    def cleanup(self):
+        self.stop_event.set()
+        if hasattr(self, 'display_thread'):
+            self.display_thread.join()
+        self.progress = Progress()
+        self.tasks.clear()
+        self.logs.clear()
+
+# Example usage
+if __name__ == "__main__":
+    agent = BaseAgent("MyAgent")
+    agent.start_displays()
+
+    # Add a new task
+    agent.add_task("Processing", total=100)
+
+    # Simulate work
+    for i in range(100):
+        agent.update_progress("Processing", advance=1)
+        
+        # Log some information
+        agent.log(f"Processed step {i}")
+        
+        # Display results periodically
+        if i % 20 == 0:
+            result = f"Result at step {i}: Some computed value"
+            agent.display_results(result)
+        
+        # Simulate some work
+        time.sleep(0.1)
+
+    agent.cleanup()
