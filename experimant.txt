@@ -1,0 +1,90 @@
+import logging
+from rich.console import Console
+from rich.logging import RichHandler
+from rich.live import Live
+from rich.layout import Layout
+from rich.panel import Panel
+from rich.progress import Progress, TaskID
+from rich.text import Text
+from rich.table import Table
+from collections import deque
+from typing import Optional, Dict
+
+console = Console()
+
+class BaseAgent:
+    def __init__(self, name: str, model: str = "gpt-4", debug: bool = False, max_log_lines: int = 100):
+        self.name = name
+        self.model = model
+        self.debug = debug
+        self.logger = self._setup_logger()
+        self.live: Optional[Live] = None
+        self.layout: Optional[Layout] = None
+        self.progress: Optional[Progress] = None
+        self.log_buffer = deque(maxlen=max_log_lines)
+        self.tasks: Dict[str, TaskID] = {}
+
+    def _setup_logger(self) -> logging.Logger:
+        logger = logging.getLogger(self.name)
+        logger.setLevel(logging.DEBUG if self.debug else logging.INFO)
+        if not logger.handlers:
+            handler = RichHandler(console=console, show_time=False, show_path=False)
+            handler.setFormatter(logging.Formatter("%(message)s"))
+            logger.addHandler(handler)
+        return logger
+
+    def setup_live_display(self):
+        if not self.live:
+            self.layout = Layout(name="root")
+            self.layout.split(
+                Layout(name="top", size=3, minimum_size=3),
+                Layout(name="middle", ratio=1),
+                Layout(name="bottom", size=10, minimum_size=5)
+            )
+            self.progress = Progress(expand=True)
+            self.layout["top"].update(Panel(self.progress, title="Progress", expand=True))
+            self.layout["middle"].update(Panel("No results yet", title="Results", expand=True))
+            self.layout["bottom"].update(Panel("", title="Logs", expand=True))
+            self.live = Live(self.layout, console=console, refresh_per_second=4, auto_refresh=False, screen=True)
+            self.live.start()
+
+    def log(self, message: str, level: str = "info"):
+        getattr(self.logger, level)(message)
+        self.log_buffer.append(message)
+        if self.live and self.layout:
+            self._update_log_panel()
+            self.live.refresh()
+
+    def _update_log_panel(self):
+        log_content = Text("\n".join(self.log_buffer))
+        self.layout["bottom"].update(Panel(log_content, title="Logs", expand=True))
+
+    def update_results(self, content):
+        if self.live and self.layout:
+            if isinstance(content, Table):
+                content.expand = True
+                self.layout["middle"].update(Panel(content, title="Results", expand=True))
+            else:
+                self.layout["middle"].update(Panel(str(content), title="Results", expand=True))
+            self.live.refresh()
+
+    def add_task(self, name: str, total: float) -> TaskID:
+        if self.progress:
+            task_id = self.progress.add_task(name, total=total)
+            self.tasks[name] = task_id
+            self.live.refresh()
+            return task_id
+        return None
+
+    def update_progress(self, task_name: str, advance: float = 1):
+        if self.progress and task_name in self.tasks:
+            self.progress.update(self.tasks[task_name], advance=advance)
+            self.live.refresh()
+
+    def cleanup_live_display(self):
+        if self.live:
+            self.live.stop()
+            self.live = None
+            self.layout = None
+            self.progress = None
+            self.tasks.clear()
