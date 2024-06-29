@@ -1,0 +1,68 @@
+import re
+from typing import Dict, Union, Any
+
+def extract_code(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Extract code from the dictionary structure, removing ```python markers if present.
+    Preserves the original structure of the input dictionary.
+    
+    Args:
+    data (Dict): A dictionary containing 'module' and 'external' keys.
+                 Values can be strings or nested dictionaries.
+
+    Returns:
+    Dict[str, Any]: A dictionary with the same structure as input, but with ```python markers removed from code strings.
+    """
+    def remove_python_markers(text: str) -> str:
+        """Remove ```python markers from a string if present."""
+        pattern = r'```python\n(.*?)```'
+        match = re.search(pattern, text, re.DOTALL)
+        if match:
+            return match.group(1).strip()
+        return text.strip()
+
+    def process_nested(item: Union[str, Dict]) -> Union[str, Dict]:
+        if isinstance(item, str):
+            return remove_python_markers(item)
+        elif isinstance(item, dict):
+            return {k: process_nested(v) for k, v in item.items()}
+        return item
+
+    result = {}
+    if 'module' in data:
+        result['module'] = process_nested(data['module'])
+    if 'external' in data:
+        result['external'] = process_nested(data['external'])
+
+    return result
+
+# Test the function
+def test_extract_code():
+    # Test case 1: Simple structure with Python code blocks
+    data1 = {
+        'module': '```python\nprint("Hello, World!")\n```',
+        'external': {
+            'file1': '```python\ndef func1():\n    pass\n```',
+            'file2': 'def func2(): pass'  # No Python markers
+        }
+    }
+    
+    # Test case 2: Nested structure with mixed content
+    data2 = {
+        'module': {
+            'file3': '```python\nprint("Hello from file3")\n```\nSome additional text.'
+        },
+        'external': {
+            'file1': {'nested': '```python\ndef func1():\n    pass\n```'},
+            'file2': 'Regular string without Python markers'
+        }
+    }
+
+    print("Test case 1 result:")
+    print(extract_code(data1))
+    print("\nTest case 2 result:")
+    print(extract_code(data2))
+
+# Run the test
+if __name__ == "__main__":
+    test_extract_code()
