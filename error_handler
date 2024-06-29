@@ -1,0 +1,39 @@
+import openai
+from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
+
+class MyClass:
+    def __init__(self):
+        pass
+
+    def log(self, retry_state):
+        exception = retry_state.outcome.exception()
+        if isinstance(exception, openai.error.RateLimitError):
+            print(f"Retrying due to rate limit error: attempt {retry_state.attempt_number}")
+        elif isinstance(exception, openai.error.Timeout):
+            print(f"Retrying due to timeout error: attempt {retry_state.attempt_number}")
+
+    @retry(
+        stop=stop_after_attempt(3), 
+        wait=wait_fixed(2), 
+        before_sleep=lambda retry_state: retry_state.fn.__self__.log(retry_state),
+        retry=retry_if_exception_type((openai.error.RateLimitError, openai.error.Timeout))
+    )
+    def my_method(self):
+        try:
+            # Simulate OpenAI API call
+            print("Executing my_method")
+            try:
+                # Example to raise an exception for testing
+                raise openai.error.RateLimitError("Rate limit exceeded")
+            except openai.error.RateLimitError as e:
+                print("Caught rate limit error, will retry...")
+                raise  # Re-raise to trigger the retry mechanism
+            except openai.error.Timeout as e:
+                print("Caught timeout error, will retry...")
+                raise  # Re-raise to trigger the retry mechanism
+        except Exception as e:
+            print(f"Final exception caught in my_method: {e}")
+
+# Usage
+obj = MyClass()
+obj.my_method()
