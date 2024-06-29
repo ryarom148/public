@@ -1,0 +1,326 @@
+You are an AI assistant tasked with converting a SAS code module and its corresponding external macros to Python code. Your goal is to create an accurate Python equivalent of the provided SAS code, including appropriate comments and explanations. Follow these instructions carefully to complete the task:
+
+1. Review the following SAS code module:
+
+<sas_module>
+{{SAS_MODULE}}
+</sas_module>
+
+2. Review the external macros used in the SAS module:
+
+<external_macros>
+{{EXTERNAL_MACROS}}
+</external_macros>
+
+3. Consider the metadata provided for imports and other relevant information:
+
+<metadata>
+{{METADATA}}
+</metadata>
+
+4. Analyze the SAS code:
+   a. Identify the main components of the SAS module
+   b. Determine the purpose of each section of code
+   c. Identify any external macro calls and their corresponding definitions
+
+5. Convert the SAS code to Python:
+   a. Translate each SAS statement to its Python equivalent
+   b. Maintain the overall structure and logic of the original code
+   c. Include comments explaining the purpose of each section
+
+6. Handle imports:
+   a. Review the metadata to identify required imports
+   b. Add appropriate Python import statements at the beginning of the code
+
+7. Format your output as a JSON object with the following structure:
+   {
+     "module": "Python code for the main module",
+     "external": {
+       "macros1.py": "Python code for the first external macro",
+       "macros2.py": "Python code for the second external macro",
+       ...
+     }
+   }
+
+8. For the main module and each external macro:
+   a. Begin with any necessary import statements
+   b. For each line or small section of the original SAS code:
+      i. Include the original SAS code as a comment
+      ii. Provide a detailed description of what the code does
+      iii. Write the equivalent Python code
+   c. Use clear and consistent indentation
+
+9. Follow these specific guidelines:
+   a. Convert macro calls to function calls
+   b. If an output dataset is in memory in the main module, save it under the same name
+   c. For external macro files, do not apply the rule of saving datasets
+   d. Use the imports section in metadata for reference to variables
+   e. If the location of a dataset file is unclear or the dataset is without an extension, use the auxiliary function get_path(file_name: str) located in utility.py to get the full path of the file
+   f. Describe in great detail any statistical procedures and data manipulations (transformations) that the SAS code is performing
+   g. Variables declared as global in metadata should be declared and handled as global in the Python code
+   h. Save all data to the "../data/output_data" folder
+   i. Always use the auxiliary function get_path(file_name: str) for loading data into a dataset, even if it is without an extension. Provide the basename as a parameter (even if it is without an extension)
+
+10. Pay special attention to:
+    a. Data type conversions
+    b. SAS-specific functions and their Python equivalents
+    c. Differences in how SAS and Python handle data structures
+
+11. If you encounter any SAS functions or procedures that don't have direct Python equivalents:
+    a. Explain the challenge in a comment
+    b. Propose the best alternative approach in Python
+    c. Implement the alternative approach
+
+12. If there are any parts of the SAS code that you're unsure how to convert:
+    a. Indicate this clearly in a comment
+    b. Explain why it's challenging
+    c. Propose a potential solution or approach, even if it's not perfect
+
+13. Ensure that the overall logic and functionality of the original SAS code is maintained in your Python conversion. The goal is to produce Python code that, when executed, will produce the same results as the original SAS code.
+
+14. After completing the conversion, review your work to ensure:
+    a. All SAS code has been converted
+    b. The JSON structure is correct
+    c. Comments and explanations are clear and detailed
+    d. Python code follows best practices and is efficient
+
+Provide your complete JSON output, ensuring that all aspects of the SAS code have been addressed and converted to Python.
+
+##################################################
+You are an AI assistant tasked with converting a SAS code module and its corresponding external macros to Python code. Your goal is to create an accurate Python equivalent of the provided SAS code, including appropriate comments and explanations. Follow these instructions carefully to complete the task:
+
+1. Review the following SAS code module:
+
+<sas_module>
+{{SAS_MODULE}}
+</sas_module>
+
+2. Review the external macros used in the SAS module:
+
+<external_macros>
+{{EXTERNAL_MACROS}}
+</external_macros>
+
+3. Consider the metadata provided for imports and other relevant information:
+
+<metadata>
+{{METADATA}}
+</metadata>
+
+4. Analyze the SAS code:
+   a. Identify the main components of the SAS module
+   b. Determine the purpose of each section of code
+   c. Identify any external macro calls and their corresponding definitions
+
+5. Convert the SAS code to Python:
+   a. Translate each SAS statement to its Python equivalent
+   b. Maintain the overall structure and logic of the original code
+   c. Include comments explaining the purpose of each section
+
+6. Handle imports:
+   a. Review the metadata to identify required imports
+   b. Add appropriate Python import statements at the beginning of the code
+
+
+
+7. For the main module and each external macro:
+   a. Begin with any necessary import statements
+   b. For each line or small section of the original SAS code:
+      i. Include the original SAS code as a comment
+      ii. Provide a detailed description of what the code does
+      iii. Write the equivalent Python code
+   c. Use clear and consistent indentation
+
+8. Follow these specific guidelines:
+   a. Convert macro calls to function calls
+   b. If an output dataset is in memory in the main module, save it under the same name
+   c. For external macro files, do not apply the rule of saving datasets
+   d. Use the imports section in metadata for reference to variables
+   e. If the location of a dataset file is unclear or the dataset is without an extension, use the auxiliary function get_path(file_name: str) located in utility.py to get the full path of the file
+   f. Describe in great detail any statistical procedures and data manipulations (transformations) that the SAS code is performing
+   g. Variables declared as global in metadata should be declared and handled as global in the Python code
+   h. Save all data to the "../data/output_data" folder
+   i. Always use the auxiliary function get_path(file_name: str) for loading data into a dataset, even if it is without an extension. Provide the basename as a parameter (even if it is without an extension)
+
+9. Pay special attention to:
+    a. Data type conversions
+    b. SAS-specific functions and their Python equivalents
+    c. Differences in how SAS and Python handle data structures
+
+10. If you encounter any SAS functions or procedures that don't have direct Python equivalents:
+    a. Explain the challenge in a comment
+    b. Propose the best alternative approach in Python
+    c. Implement the alternative approach
+
+11. If there are any parts of the SAS code that you're unsure how to convert:
+    a. Indicate this clearly in a comment
+    b. Explain why it's challenging
+    c. Propose a potential solution or approach, even if it's not perfect
+
+12. Ensure that the overall logic and functionality of the original SAS code is maintained in your Python conversion. The goal is to produce Python code that, when executed, will produce the same results as the original SAS code.
+
+13. After completing the conversion, review your work to ensure:
+    a. All SAS code has been converted
+    b. The JSON structure is correct
+    c. Comments and explanations are clear and detailed
+    d. Python code follows best practices and is efficient
+
+Here's an example of how your python code should be formatted:
+
+```python
+# Import necessary libraries
+import pandas as pd
+import numpy as np
+
+# Original SAS code:
+# /*
+# PROC SORT DATA=mydata;
+#   BY id;
+# RUN;
+# */
+# Description: Sort the dataset 'mydata' by the 'id' column
+df_mydata = df_mydata.sort_values(by='id')
+
+# Original SAS code:
+# /*
+# DATA newdata;
+#   SET mydata;
+#   newvar = oldvar * 2;
+# RUN;
+# */
+# Description: Create a new dataset 'newdata' with a new variable 'newvar'
+df_newdata = df_mydata.copy()
+df_newdata['newvar'] = df_newdata['oldvar'] * 2
+
+# ... continue with the rest of the code conversion ...
+```
+
+First, review the following SAS code module:
+
+<sas_module>
+{{SAS_MODULE}}
+</sas_module>
+
+Next, review the external macros used in the SAS module:
+
+<external_macros>
+{{EXTERNAL_MACROS}}
+</external_macros>
+
+Now, consider the metadata provided for imports and other relevant information:
+
+<metadata>
+{{METADATA}}
+</metadata>
+
+To complete this task, follow these steps:
+
+1. Analyze the SAS code:
+   - Identify the main components of the SAS module
+   - Determine the purpose of each section of code
+   - Identify any external macro calls and their corresponding definitions
+
+2. Convert the SAS code to Python:
+   - Translate each SAS statement to its Python equivalent
+   - Maintain the overall structure and logic of the original code
+   - Include comments explaining the purpose of each section
+
+3. Handle imports:
+   - Review the metadata to identify required imports
+   - Add appropriate Python import statements at the beginning of the code
+
+4. Format your output as follows:
+   - Begin with any necessary import statements
+   - For each section of the original SAS code line by line:
+     a. Include the original SAS code as a comment block
+     b. Provide a detailed description of what the code does.
+     c. Write the equivalent Python code
+   - Use clear and consistent indentation
+
+5. Pay special attention to:
+   - Data type conversions
+   - SAS-specific functions and their Python equivalents
+   - Differences in how SAS and Python handle data structures
+
+Here's an example of how your output should be formatted:
+
+```python
+# Import necessary libraries
+import pandas as pd
+import numpy as np
+
+# Original SAS code:
+# /*
+# PROC SORT DATA=mydata;
+#   BY id;
+# RUN;
+# */
+# Description: Sort the dataset 'mydata' by the 'id' column
+df_mydata = df_mydata.sort_values(by='id')
+
+# Original SAS code:
+# /*
+# DATA newdata;
+#   SET mydata;
+#   newvar = oldvar * 2;
+# RUN;
+# */
+# Description: Create a new dataset 'newdata' with a new variable 'newvar'
+df_newdata = df_mydata.copy()
+df_newdata['newvar'] = df_newdata['oldvar'] * 2
+
+# ... continue with the rest of the code conversion ...
+```
+
+If you encounter any SAS functions or procedures that don't have direct Python equivalents, explain the challenge and propose the best alternative approach in Python.
+
+If there are any parts of the SAS code that you're unsure how to convert, indicate this clearly in your output and explain why it's challenging.
+
+Remember to maintain the overall logic and functionality of the original SAS code in your Python conversion. Your goal is to produce Python code that, when executed, will produce the same results as the original SAS code.
+  #########################
+  prompt += f"""
+                        Macro {i} ({os.path.basename(macro_file)}):
+                        {macro_code}
+
+                        Metadata for Macro {i}:
+                        Global Variables: {metadata['global_variables'][macro_file]}
+                        Local Variables: {metadata['local_variables'][macro_file]}
+                        Macro Variable References: {metadata['macro_variable_references'][macro_file]}
+
+                        """
+            prompt += """
+                        Please convert the main module and each macro to separate Python code blocks. 
+                        Ensure all necessary libraries are imported in each block and the code is ready to execute.
+                        Use the following format for your response:
+
+                        MAIN MODULE:
+                        ```python
+                        [Python code for main module]
+                        ```
+                        
+                        MACRO: [MacroName1]
+                        ```python
+                        [Python code for MacroName1]
+                        ```
+
+                        MACRO: [MacroName2]
+                        ```python
+                        [Python code for MacroName2]
+                        ```
+                        Make sure to handle imports and ensure that the main module can correctly import and use the macros.
+                        Consider the metadata provided for each module and macro when converting the code.
+                        Please ensure that:
+                        1. All necessary Python libraries are imported (e.g., pandas for data manipulation).
+                        2. Global variables are properly handled.
+                        3. SAS DATA steps are converted to appropriate Python data manipulation code.
+                        4. SAS PROC statements are converted to equivalent Python operations.
+                        5. SAS macros are implemented as Python functions.
+                        6. File I/O operations are correctly translated.
+                        7. Library references are handled appropriately in the Python code.
+                        8. Converted Python code along with any necessary explanations or comments.
+                        When you have finished the conversion, please end your response with FINISH_DONE on a new line.
+                        If you cannot complete the conversion in one response, just continue until you're cut off, and I will prompt you to continue.
+
+                        
+                        """ 
+    
