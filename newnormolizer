@@ -1,0 +1,53 @@
+def rename_file(filename):
+    # Regular expression to match the pattern (number)(base name)(extension)
+    match = re.match(r'^(\d+)([\._]*)(.*)$', filename)
+    
+    if match:
+        number = match.group(1)
+        separator = match.group(2)
+        base_and_ext = match.group(3)
+        
+        # Split base_and_ext into base name and extension
+        if '.' in base_and_ext:
+            base_name, ext = base_and_ext.rsplit('.', 1)
+        else:
+            base_name, ext = base_and_ext, ''
+        
+        # Remove leading separators from base name
+        base_name = base_name.lstrip('._')
+
+        # Construct the new filename
+        if not base_name and not ext:
+            # Edge case: only a number with separators, e.g., "1_" or "12345"
+            new_filename = filename
+        elif ext:
+            new_filename = f"{base_name}_{number}.{ext}"
+        else:
+            new_filename = f"{base_name}_{number}"
+    else:
+        # If no match is found, return the original filename
+        new_filename = filename
+
+    return new_filename
+
+# Test cases
+filenames = [
+    "1.input.sas",
+    "12_file.sas",
+    "143.file_xren50.sas",
+    "1_simple_file.txt",
+    "20_complex_file_name.doc",
+    "file_without_number.pdf",
+    "100file.jpg",
+    "1_",
+    "12345",
+    "50.file.with.dots.txt",
+    "99file",
+    "1_input_file.sas",
+    "2_multiple_underscore_file.txt",
+    "3.multiple.dot.file.pdf"
+]
+
+# Apply rename_file function and print results
+results = {filename: rename_file(filename) for filename in filenames}
+results
