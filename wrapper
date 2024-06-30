@@ -1,0 +1,16 @@
+from functools import wraps
+im
+def custom_retry(func):
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        @retry(
+            stop=stop_after_attempt(3),
+            wait=wait_fixed(2),
+            retry=retry_if_exception_type((openai.error.RateLimitError, openai.error.Timeout)),
+            before_sleep=before_sleep_log(self, logger=self.log_retry_att        )
+        def wrapped_func():
+            return func(self, *args, **kwargs)
+        
+        return wrapped_func()
+    
+    return wrapper
