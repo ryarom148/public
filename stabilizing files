@@ -1,0 +1,13 @@
+def move_number_to    # Regular expression to match filenames starting with numbers
+    pattern = r'^(\d+)(.+)(\..+)?$'
+    match = re.match(pattern, filename)
+    
+    if match:
+        number, name, extension = match.groups()
+        # Remove leading        name = name.lstrip('_')
+        # If there's no extension, use an empty string
+        extension = extension or ''
+        # Construct the new filename
+        return f"{name}_{number}{extension}"
+    else:
+        # If the filename doesn't start        return filename
