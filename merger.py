@@ -21,7 +21,59 @@ mapping = pd.DataFrame({
     'name': ['John', 'John', 'Alice', 'Bob', 'Bob', 'Carol']
 })
 
-# Register DataFrames with DuckDB
+# Method 1: Using duckdb.from_df() - direct query on pandas DataFrames
+# This is the most direct and efficient way when working with pandas DataFrames
+result_from_df = duckdb.query_df(
+    source, 
+    mapping, 
+    """
+    SELECT 
+        s.account, 
+        s.database, 
+        s.value, 
+        m.address, 
+        m.name
+    FROM 
+        df1 s 
+    LEFT JOIN 
+        df2 m 
+    ON 
+        s.account = m.account 
+        AND CONTAINS(LOWER(m.address), LOWER(s.database))
+    ORDER BY 
+        s.account, s.value
+    """
+).to_df()
+
+print("DuckDB solution using duckdb.query_df():")
+print(result_from_df)
+
+# Method 2: Using duckdb.from_df() with explicit table names
+result_named = duckdb.query_df(
+    {"source_table": source, "mapping_table": mapping}, 
+    """
+    SELECT 
+        s.account, 
+        s.database, 
+        s.value, 
+        m.address, 
+        m.name
+    FROM 
+        source_table s 
+    LEFT JOIN 
+        mapping_table m 
+    ON 
+        s.account = m.account 
+        AND CONTAINS(LOWER(m.address), LOWER(s.database))
+    ORDER BY 
+        s.account, s.value
+    """
+).to_df()
+
+print("\nDuckDB solution using duckdb.query_df() with named tables:")
+print(result_named)
+
+# Method 3: Alternative approach using connect() and register()
 con = duckdb.connect(database=':memory:')
 con.register('source', source)
 con.register('mapping', mapping)
