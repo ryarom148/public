@@ -419,36 +419,80 @@ def merge_step_by_step(source_df, mapping_df, oracle_mapping):
 # Execute the step-by-step merge
 final_result = merge_step_by_step(source_df, mapping_df, oracle_mapping)
 
-# Alternative approach using a single query
-def merge_single_query(source_df, mapping_df, oracle_mapping):
+import pandas as pd
+import duckdb
+
+# Sample data based on your images
+source_df = pd.DataFrame({
+    'User_Name': ['user1', 'user2', 'user3', 'user4', 'user5'],
+    'Database_Name': ['db_prod1', 'db_dev2', 'db_test3', 'cdb_prod1', 'db_unknown'],
+    'Value': [100, 200, 300, 400, 500]
+})
+
+mapping_df = pd.DataFrame({
+    'User Name': ['user1', 'user2', 'user3', 'user4', 'user6'],
+    'Account Name': ['acc_prod1', 'acc_dev2', 'acc_test3', 'acc_prod4', 'acc_other'],
+    'Address': ['123 Main St (srvc_prod1)', '456 Oak Ave (srvc_dev1)', 
+                '789 Pine Rd (srvc_test1)', '101 Palm Blvd (srvc_prod2)', 
+                '555 Other Ln (srvc_other)']
+})
+
+# Oracle mapping table based on your second image
+oracle_mapping = pd.DataFrame({
+    'CDB_NAME': ['cdb_prod1', 'cdb_dev1', 'cdb_test1', 'cdb_prod1', 'cdb_dev1', 'cdb_prod1'],
+    'SERVICE_NAME': ['srvc_prod1', 'srvc_dev1', 'srvc_test1', 'srvc_prod2', 'srvc_dev2', 'srvc_prod3'],
+    'PDB_NAME': ['db_prod1', 'db_dev2', 'db_test3', 'db_prod4', 'db_dev5', 'db_prod6']
+})
+
+def corrected_merge(source_df, mapping_df, oracle_mapping):
+    """
+    Corrected merge approach that properly handles the four rules
+    """
     query = """
-    SELECT 
-        s.*,
-        m.* EXCLUDE ("User Name"),
-        om.PDB_NAME,
-        om.CDB_NAME,
-        om.SERVICE_NAME
-    FROM 
-        source_df s
-    LEFT JOIN 
-        mapping_df m
-    ON 
-        TRIM(LOWER(s.User_Name)) = TRIM(LOWER(m."User Name"))
-    LEFT JOIN 
-        oracle_mapping om
-    ON 
-        (CONTAINS(LOWER(m.Address), LOWER(om.SERVICE_NAME)))
-        AND (
-            TRIM(LOWER(s.Database_Name)) = TRIM(LOWER(om.PDB_NAME))
-            OR
-            TRIM(LOWER(s.Database_Name)) = TRIM(LOWER(om.CDB_NAME))
-            OR
-            CONTAINS(LOWER(m."Account Name"), TRIM(LOWER(s.Database_Name)))
-            OR
-            CONTAINS(LOWER(m.Address), TRIM(LOWER(s.Database_Name)))
-        )
-    ORDER BY
-        s.User_Name
+    WITH 
+    -- First, join mapping with oracle mapping
+    mapping_with_oracle AS (
+        SELECT 
+            m.*,
+            om.PDB_NAME,
+            om.CDB_NAME,
+            om.SERVICE_NAME
+        FROM 
+            mapping_df m
+        LEFT JOIN 
+            oracle_mapping om
+        ON 
+            CONTAINS(LOWER(m.Address), LOWER(om.SERVICE_NAME))
+    ),
+    
+    -- Match source with the combined mapping
+    matched_data AS (
+        SELECT 
+            s.*,
+            m.* EXCLUDE ("User Name")
+        FROM 
+            source_df s
+        LEFT JOIN 
+            mapping_with_oracle m
+        ON 
+            TRIM(LOWER(s.User_Name)) = TRIM(LOWER(m."User Name"))
+            AND (
+                -- Rule 1: Database_Name matches PDB_NAME (if PDB_NAME is not null)
+                (m.PDB_NAME IS NOT NULL AND TRIM(LOWER(s.Database_Name)) = TRIM(LOWER(m.PDB_NAME)))
+                OR
+                -- Rule 2: Database_Name matches CDB_NAME (if CDB_NAME is not null)
+                (m.CDB_NAME IS NOT NULL AND TRIM(LOWER(s.Database_Name)) = TRIM(LOWER(m.CDB_NAME)))
+                OR
+                -- Rule 3: Database_Name exists in Account Name
+                CONTAINS(LOWER(m."Account Name"), TRIM(LOWER(s.Database_Name)))
+                OR
+                -- Rule 4: Database_Name exists in Address
+                CONTAINS(LOWER(m.Address), TRIM(LOWER(s.Database_Name)))
+            )
+    )
+    
+    SELECT * FROM matched_data
+    ORDER BY User_Name
     """
     
     result = duckdb.query_df(
@@ -456,10 +500,141 @@ def merge_single_query(source_df, mapping_df, oracle_mapping):
         query
     ).to_df()
     
-    print("\nSingle query approach result:")
-    print(result)
+    return result
+
+# Execute the corrected merge
+result = corrected_merge(source_df, mapping_df, oracle_mapping)
+print("Corrected merge result:")
+print(result)
+
+# Alternative approach with more explicit rule prioritization
+def merge_with_rule_priority(source_df, mapping_df, oracle_mapping):
+    """
+    Merge with explicitly prioritized rules
+    """
+    query = """
+    WITH 
+    -- Join mapping with oracle mapping
+    mapping_with_oracle AS (
+        SELECT 
+            m.*,
+            om.PDB_NAME,
+            om.CDB_NAME,
+            om.SERVICE_NAME
+        FROM 
+            mapping_df m
+        LEFT JOIN 
+            oracle_mapping om
+        ON 
+            CONTAINS(LOWER(m.Address), LOWER(om.SERVICE_NAME))
+    ),
+    
+    -- Prepare source data with all potential matches
+    source_matches AS (
+        SELECT 
+            s.User_Name,
+            s.Database_Name,
+            s.Value,
+            m."Account Name",
+            m.Address,
+            m.PDB_NAME,
+            m.CDB_NAME,
+            m.SERVICE_NAME,
+            CASE
+                WHEN m.PDB_NAME IS NOT NULL AND TRIM(LOWER(s.Database_Name)) = TRIM(LOWER(m.PDB_NAME)) THEN 1
+                WHEN m.CDB_NAME IS NOT NULL AND TRIM(LOWER(s.Database_Name)) = TRIM(LOWER(m.CDB_NAME)) THEN 2
+                WHEN CONTAINS(LOWER(m."Account Name"), TRIM(LOWER(s.Database_Name))) THEN 3
+                WHEN CONTAINS(LOWER(m.Address), TRIM(LOWER(s.Database_Name))) THEN 4
+                ELSE 0
+            END AS match_type
+        FROM 
+            source_df s
+        LEFT JOIN 
+            mapping_with_oracle m
+        ON 
+            TRIM(LOWER(s.User_Name)) = TRIM(LOWER(m."User Name"))
+        WHERE
+            match_type > 0  -- Only keep actual matches
+    ),
+    
+    -- For each source row, select the match with highest priority
+    best_matches AS (
+        SELECT *,
+            ROW_NUMBER() OVER (
+                PARTITION BY User_Name, Database_Name, Value
+                ORDER BY match_type
+            ) AS priority_rank
+        FROM source_matches
+    )
+    
+    SELECT * EXCLUDE (match_type, priority_rank)
+    FROM best_matches
+    WHERE priority_rank = 1
+    ORDER BY User_Name
+    """
+    
+    result = duckdb.query_df(
+        {"source_df": source_df, "mapping_df": mapping_df, "oracle_mapping": oracle_mapping},
+        query
+    ).to_df()
     
     return result
 
-# Execute the single query approach
-single_query_result = merge_single_query(source_df, mapping_df, oracle_mapping)
+# Execute the prioritized merge
+priority_result = merge_with_rule_priority(source_df, mapping_df, oracle_mapping)
+print("\nMerge with rule prioritization:")
+print(priority_result)
+
+# Final optimized merge function that correctly handles all rules
+def final_merge(source_df, mapping_df, oracle_mapping):
+    """
+    Final optimized merge function
+    """
+    query = """
+    WITH mapping_enhanced AS (
+        -- Pre-join mapping_df with oracle_mapping to create enhanced mapping
+        SELECT 
+            m.*,
+            om.PDB_NAME,
+            om.CDB_NAME,
+            om.SERVICE_NAME
+        FROM 
+            mapping_df m
+        LEFT JOIN 
+            oracle_mapping om
+        ON 
+            CONTAINS(LOWER(m.Address), LOWER(om.SERVICE_NAME))
+    )
+    
+    SELECT 
+        s.*,
+        m.* EXCLUDE ("User Name")
+    FROM 
+        source_df s
+    LEFT JOIN 
+        mapping_enhanced m
+    ON 
+        TRIM(LOWER(s.User_Name)) = TRIM(LOWER(m."User Name"))
+        AND (
+            -- Check the four rules independently
+            CONTAINS(LOWER(m."Account Name"), TRIM(LOWER(s.Database_Name)))
+            OR
+            CONTAINS(LOWER(m.Address), TRIM(LOWER(s.Database_Name)))
+            OR
+            (m.PDB_NAME IS NOT NULL AND TRIM(LOWER(s.Database_Name)) = TRIM(LOWER(m.PDB_NAME)))
+            OR
+            (m.CDB_NAME IS NOT NULL AND TRIM(LOWER(s.Database_Name)) = TRIM(LOWER(m.CDB_NAME)))
+        )
+    ORDER BY
+        s.User_Name
+    """
+    
+    return duckdb.query_df(
+        {"source_df": source_df, "mapping_df": mapping_df, "oracle_mapping": oracle_mapping},
+        query
+    ).to_df()
+
+# Execute the final optimized merge
+final_result = final_merge(source_df, mapping_df, oracle_mapping)
+print("\nFinal optimized merge result:")
+print(final_result)
