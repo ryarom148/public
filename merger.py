@@ -316,3 +316,178 @@ def performance_comparison():
 
 # Uncomment to run performance comparison
 # performance_comparison()
+
+import pandas as pd
+import duckdb
+
+# Sample data based on your images
+source_df = pd.DataFrame({
+    'User_Name': ['user1', 'user2', 'user3', 'user4', 'user5'],
+    'Database_Name': ['db_prod1', 'db_dev2', 'db_test3', 'cdb_prod1', 'db_unknown'],
+    'Value': [100, 200, 300, 400, 500]
+})
+
+mapping_df = pd.DataFrame({
+    'User Name': ['user1', 'user2', 'user3', 'user4', 'user6'],
+    'Account Name': ['acc_prod1', 'acc_dev2', 'acc_test3', 'acc_prod4', 'acc_other'],
+    'Address': ['123 Main St (db_prod1)', '456 Oak Ave (db_dev2)', 
+                '789 Pine Rd (db_test3)', '101 Palm Blvd (cdb_prod1)', 
+                '555 Other Ln (db_other)']
+})
+
+# Oracle mapping table based on your second image
+oracle_mapping = pd.DataFrame({
+    'CDB_NAME': ['cdb_prod1', 'cdb_dev1', 'cdb_test1', 'cdb_prod1', 'cdb_dev1', 'cdb_prod1'],
+    'SERVICE_NAME': ['srvc_prod1', 'srvc_dev1', 'srvc_test1', 'srvc_prod2', 'srvc_dev2', 'srvc_prod3'],
+    'PDB_NAME': ['db_prod1', 'db_dev2', 'db_test3', 'db_prod4', 'db_dev5', 'db_prod6']
+})
+
+def merge_duckdb3(source_df, mapping_df, oracle_mapping):
+    """
+    Enhanced merge function that integrates the Oracle mapping table
+    """
+    # Register DataFrames with DuckDB
+    conn = duckdb.connect(':memory:')
+    conn.register('source_df', source_df)
+    conn.register('mapping_df', mapping_df)
+    conn.register('oracle_mapping', oracle_mapping)
+    
+    # The enhanced query with Oracle mapping integration
+    query = """
+    WITH 
+    -- First, attempt to match source.Database_Name to PDB_NAME
+    pdb_matches AS (
+        SELECT 
+            s.*,
+            om.SERVICE_NAME,
+            om.CDB_NAME
+        FROM 
+            source_df s
+        LEFT JOIN 
+            oracle_mapping om
+        ON 
+            TRIM(LOWER(s.Database_Name)) = TRIM(LOWER(om.PDB_NAME))
+    ),
+    
+    -- For records where PDB match failed, try matching to CDB_NAME
+    all_matches AS (
+        SELECT 
+            s.*,
+            CASE 
+                WHEN s.SERVICE_NAME IS NOT NULL THEN s.SERVICE_NAME
+                ELSE om.SERVICE_NAME
+            END AS final_service_name,
+            CASE 
+                WHEN s.CDB_NAME IS NOT NULL THEN s.CDB_NAME
+                ELSE om.CDB_NAME
+            END AS final_cdb_name
+        FROM 
+            pdb_matches s
+        LEFT JOIN 
+            oracle_mapping om
+        ON 
+            s.SERVICE_NAME IS NULL AND
+            TRIM(LOWER(s.Database_Name)) = TRIM(LOWER(om.CDB_NAME))
+    ),
+    
+    -- Perform the final merge with mapping_df
+    final_merge AS (
+        SELECT 
+            s.*,
+            m.* EXCLUDE ('User Name')
+        FROM 
+            all_matches s
+        LEFT JOIN 
+            mapping_df m
+        ON 
+            TRIM(LOWER(s.User_Name)) = TRIM(LOWER(m."User Name"))
+            AND (
+                -- Match on SERVICE_NAME in address
+                (s.final_service_name IS NOT NULL AND 
+                 CONTAINS(LOWER(m.Address), LOWER(s.final_service_name)))
+                OR
+                -- Match on Database_Name in Account Name or Address
+                CONTAINS(LOWER(m."Account Name"), TRIM(LOWER(s.Database_Name)))
+                OR
+                CONTAINS(LOWER(m.Address), TRIM(LOWER(s.Database_Name)))
+            )
+    )
+    
+    SELECT * FROM final_merge
+    ORDER BY User_Name;
+    """
+    
+    result = conn.execute(query).fetchdf()
+    return result
+
+# Execute the enhanced merge
+result = merge_duckdb3(source_df, mapping_df, oracle_mapping)
+print("Enhanced merge result with Oracle mapping:")
+print(result)
+
+# Alternative approach with a more streamlined query
+def merge_duckdb_streamlined(source_df, mapping_df, oracle_mapping):
+    """
+    Streamlined version using a direct integration
+    """
+    query = """
+    WITH service_name_lookup AS (
+        -- First try to match on PDB_NAME
+        SELECT 
+            s.User_Name,
+            s.Database_Name,
+            s.Value,
+            COALESCE(
+                -- Get SERVICE_NAME from PDB match
+                (SELECT STRING_AGG(om.SERVICE_NAME, ',') 
+                 FROM oracle_mapping om 
+                 WHERE TRIM(LOWER(s.Database_Name)) = TRIM(LOWER(om.PDB_NAME))),
+                
+                -- If no PDB match, try CDB match
+                (SELECT STRING_AGG(om.SERVICE_NAME, ',') 
+                 FROM oracle_mapping om 
+                 WHERE TRIM(LOWER(s.Database_Name)) = TRIM(LOWER(om.CDB_NAME))),
+                
+                -- If neither, use original Database_Name
+                s.Database_Name
+            ) AS lookup_keys
+        FROM
+            source_df s
+    )
+    
+    SELECT 
+        s.*,
+        m.* EXCLUDE ("User Name")
+    FROM 
+        service_name_lookup s
+    LEFT JOIN 
+        mapping_df m
+    ON 
+        TRIM(LOWER(s.User_Name)) = TRIM(LOWER(m."User Name"))
+        AND (
+            -- Try to match any of the lookup keys in address
+            (s.lookup_keys <> s.Database_Name AND
+             (SELECT COUNT(*) FROM (
+                 SELECT UNNEST(STRING_SPLIT(s.lookup_keys, ',')) AS service
+              ) subq
+              WHERE CONTAINS(LOWER(m.Address), TRIM(LOWER(service)))
+             ) > 0)
+            OR
+            -- If no service match, try direct Database_Name match
+            CONTAINS(LOWER(m."Account Name"), TRIM(LOWER(s.Database_Name)))
+            OR
+            CONTAINS(LOWER(m.Address), TRIM(LOWER(s.Database_Name)))
+        )
+    ORDER BY
+        s.User_Name
+    """
+    
+    return duckdb.query_df(
+        {"source_df": source_df, "mapping_df": mapping_df, "oracle_mapping": oracle_mapping},
+        query
+    ).to_df()
+
+# Execute the streamlined version
+streamlined_result = merge_duckdb_streamlined(source_df, mapping_df, oracle_mapping)
+print("\nStreamlined merge result:")
+print(streamlined_result)
