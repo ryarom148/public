@@ -638,3 +638,76 @@ def final_merge(source_df, mapping_df, oracle_mapping):
 final_result = final_merge(source_df, mapping_df, oracle_mapping)
 print("\nFinal optimized merge result:")
 print(final_result)
+
+import pandas as pd
+
+def merge_with_or_condition(left_df, right_df, left_keys, right_keys, how='inner'):
+    """
+    Merge two DataFrames based on multiple key pairs using OR logic.
+    
+    Parameters:
+    -----------
+    left_df : DataFrame
+        Left DataFrame
+    right_df : DataFrame
+        Right DataFrame
+    left_keys : list
+        List of columns from left_df to use for matching
+    right_keys : list
+        List of columns from right_df to use for matching
+    how : str
+        Type of merge to perform ('inner', 'left', 'right', 'outer')
+    
+    Returns:
+    --------
+    DataFrame : Merged result
+    """
+    # Create individual merges, one for each key pair
+    dfs = []
+    for left_key, right_key in zip(left_keys, right_keys):
+        merged = pd.merge(
+            left_df, right_df,
+            left_on=left_key, right_on=right_key,
+            how=how, suffixes=('', f'_{right_key}'),
+            indicator=True
+        )
+        # Mark which rows matched on this key pair
+        merged['_matched_on'] = f"{left_key}={right_key}"
+        dfs.append(merged)
+    
+    # Combine all the individual merges
+    combined = pd.concat(dfs)
+    
+    # Remove duplicates (where a row matched on multiple key pairs)
+    # Sort to prioritize certain matches if needed
+    result = combined.sort_values('_matched_on').drop_duplicates(
+        subset=left_df.columns.tolist(), 
+        keep='first'
+    )
+    
+    # Clean up intermediate columns
+    result = result.drop(columns=['_merge', '_matched_on'])
+    
+    return result
+
+# Example usage
+left_df = pd.DataFrame({
+    'id': [1, 2, 3, 4, 5],
+    'email': ['john@example.com', 'jane@example.com', 'bob@example.com', 'alice@example.com', 'tom@example.com'],
+    'data': ['A', 'B', 'C', 'D', 'E']
+})
+
+right_df = pd.DataFrame({
+    'user_id': [2, 3, 6, 7, 5],
+    'email': ['other@example.com', 'bob@example.com', 'mary@example.com', 'steve@example.com', 'tom@example.com'],
+    'value': [100, 200, 300, 400, 500]
+})
+
+# Merge where either id=user_id OR email=email
+result = merge_with_or_condition(
+    left_df, right_df,
+    left_keys=['id', 'email'],
+    right_keys=['user_id', 'email']
+)
+
+print(result)
