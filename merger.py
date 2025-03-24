@@ -711,3 +711,101 @@ result = merge_with_or_condition(
 )
 
 print(result)
+
+#########################################
+import pandas as pd
+import duckdb
+
+def merge_substring_mapping(main_df, mapping_df, 
+                           main_column='user_name', 
+                           mapping_column='user_id',
+                           prefer_longer_match=True):
+    """
+    Merge two pandas DataFrames where mapping_column values may be substrings
+    of main_column values. Handles overlapping substrings carefully.
+    
+    Parameters:
+    -----------
+    main_df : DataFrame
+        Main DataFrame (left side of the join)
+    mapping_df : DataFrame
+        Mapping/dictionary DataFrame (right side of the join)
+    main_column : str
+        Column in main_df that contains the strings to search within
+    mapping_column : str
+        Column in mapping_df that contains the substrings to look for
+    prefer_longer_match : bool
+        If True, prioritize longer substring matches when multiple matches exist
+        
+    Returns:
+    --------
+    DataFrame : Result of the left join
+    """
+    # Register DataFrames with DuckDB
+    tables = {
+        "main_table": main_df,
+        "mapping_table": mapping_df
+    }
+    
+    # Optimized SQL query
+    query = f"""
+    WITH 
+    -- Add normalized columns for comparison
+    main_normalized AS (
+        SELECT 
+            *,
+            LOWER(TRIM({main_column})) AS normalized_main
+        FROM 
+            main_table
+    ),
+    
+    mapping_normalized AS (
+        SELECT 
+            *,
+            LOWER(TRIM({mapping_column})) AS normalized_mapping,
+            LENGTH(TRIM({mapping_column})) AS substring_length
+        FROM 
+            mapping_table
+    ),
+    
+    -- Find all possible matches with ranking in a single step
+    ranked_matches AS (
+        SELECT 
+            m.*,
+            d.*,
+            ROW_NUMBER() OVER (
+                PARTITION BY {', '.join([f'm.{col}' for col in main_df.columns])}
+                ORDER BY 
+                    d.substring_length {'DESC' if prefer_longer_match else 'ASC'},  -- Order by length based on preference
+                    d.{mapping_column}  -- Consistent tiebreaker
+            ) AS match_rank
+        FROM 
+            main_normalized m
+        CROSS JOIN 
+            mapping_normalized d
+        WHERE 
+            POSITION(d.normalized_mapping IN m.normalized_main) > 0
+    )
+    
+    -- Get only the best match for each main row
+    SELECT 
+        m.* EXCLUDE (normalized_main),
+        r.* EXCLUDE (normalized_main, normalized_mapping, substring_length, match_rank, {', '.join([f'r.{col}' for col in main_df.columns])})
+    FROM 
+        main_normalized m
+    LEFT JOIN 
+        ranked_matches r
+    ON 
+        {' AND '.join([f'm.{col} = r.{col}' for col in main_df.columns])}
+        AND r.match_rank = 1
+    """
+    
+    # Execute query
+    result = duckdb.query_df(tables, query).to_df()
+    
+    return result
+
+
+
+# Perform the merge, preferring longer substring matches
+result = merge_substring_mapping(main_df, mapping_df)
