@@ -722,7 +722,7 @@ def merge_substring_mapping(main_df, mapping_df,
                            prefer_longer_match=True):
     """
     Merge two pandas DataFrames where mapping_column values may be substrings
-    of main_column values. Handles overlapping substrings carefully.
+    of main_column values. Handles overlapping substrings efficiently.
     
     Parameters:
     -----------
@@ -742,96 +742,69 @@ def merge_substring_mapping(main_df, mapping_df,
     DataFrame : Result of the left join
     """
     # Register DataFrames with DuckDB
-    tables = {
-        "main_table": main_df,
-        "mapping_table": mapping_df
-    }
+    conn = duckdb.connect()
+    conn.register('main_table', main_df)
+    conn.register('mapping_table', mapping_df)
     
-    # Optimized SQL query
+    # Get the columns we'll need to exclude in the final query
+    exclude_cols = ', '.join([f'bm.{col}' for col in main_df.columns if col != main_column])
+    
+    # Create efficient SQL using DuckDB-specific features
     query = f"""
     WITH 
-    -- Add normalized columns for comparison
-    main_normalized AS (
+    -- Deduplicate main column to reduce CONTAINS operations
+    distinct_main AS (
         SELECT 
-            *,
-            LOWER(TRIM({main_column})) AS normalized_main
+            {main_column}
         FROM 
             main_table
+        GROUP BY 
+            {main_column}
     ),
     
-    mapping_normalized AS (
-        SELECT 
-            *,
-            LOWER(TRIM({mapping_column})) AS normalized_mapping,
-            LENGTH(TRIM({mapping_column})) AS substring_length
-        FROM 
-            mapping_table
-    ),
-    
-    -- Get distinct values first to reduce duplicates before cross join
-    distinct_main AS (
+    -- Find best match for each distinct value with a single efficient operation
+    best_matches AS (
         SELECT
-            normalized_main,
-            -- Store a single occurrence of each distinct value
-            FIRST_VALUE({main_column}) OVER (PARTITION BY normalized_main ORDER BY normalized_main) AS original_value
-        FROM
-            main_normalized
-        GROUP BY
-            normalized_main
-    ),
-    
-    -- Match only on distinct values to reduce cartesian product size
-    distinct_matches AS (
-        SELECT 
-            d.normalized_main,
-            m.*,
-            ROW_NUMBER() OVER (
-                PARTITION BY d.normalized_main
-                ORDER BY 
-                    m.substring_length {'DESC' if prefer_longer_match else 'ASC'},
-                    m.{mapping_column}
-            ) AS match_rank
+            m.{main_column},
+            d.*,
+            substr_len
         FROM 
-            distinct_main d
-        CROSS JOIN 
-            mapping_normalized m
-        WHERE 
-            POSITION(m.normalized_mapping IN d.normalized_main) > 0
-    ),
-    
-    -- Join best matches back to full dataset
-    ranked_matches AS (
-        SELECT 
-            m.*,
-            dm.* EXCLUDE (normalized_main, match_rank),
-            dm.match_rank
-        FROM 
-            main_normalized m
-        LEFT JOIN 
-            distinct_matches dm
-        ON 
-            m.normalized_main = dm.normalized_main
-            AND dm.match_rank = 1
+            distinct_main m
+        LEFT JOIN LATERAL (
+            SELECT 
+                *,
+                LENGTH({mapping_column}) AS substr_len
+            FROM 
+                mapping_table
+            WHERE 
+                CONTAINS(LOWER(m.{main_column}), LOWER({mapping_column}))
+            ORDER BY 
+                LENGTH({mapping_column}) {'DESC' if prefer_longer_match else 'ASC'},
+                {mapping_column}
+            LIMIT 1
+        ) d ON TRUE
     )
     
-    -- Get only the best match for each main row
+    -- Join back to original main table
     SELECT 
-        m.* EXCLUDE (normalized_main),
-        r.* EXCLUDE (normalized_main, normalized_mapping, substring_length, match_rank, {', '.join([f'r.{col}' for col in main_df.columns])})
+        m.*,
+        -- All mapping columns excluding any that would conflict with main table columns
+        bm.* EXCLUDE ({main_column}, substr_len{', ' + exclude_cols if exclude_cols else ''})
     FROM 
-        main_normalized m
+        main_table m
     LEFT JOIN 
-        ranked_matches r
+        best_matches bm
     ON 
-        {' AND '.join([f'm.{col} = r.{col}' for col in main_df.columns])}
-        AND r.match_rank = 1
+        m.{main_column} = bm.{main_column}
     """
     
     # Execute query
-    result = duckdb.query_df(tables, query).to_df()
+    result = conn.query(query).to_df()
     
     return result
 
+# Example usage
 
-# Perform the merge, preferring longer substring matches
-result = merge_substring_mapping(main_df, mapping_df)
+    # Perform the merge, preferring longer substring matches
+    result = merge_substring_mapping(main_df, mapping_df)
+    print(result)
