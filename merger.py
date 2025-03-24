@@ -768,23 +768,50 @@ def merge_substring_mapping(main_df, mapping_df,
             mapping_table
     ),
     
-    -- Find all possible matches with ranking in a single step
+    -- Get distinct values first to reduce duplicates before cross join
+    distinct_main AS (
+        SELECT
+            normalized_main,
+            -- Store a single occurrence of each distinct value
+            FIRST_VALUE({main_column}) OVER (PARTITION BY normalized_main ORDER BY normalized_main) AS original_value
+        FROM
+            main_normalized
+        GROUP BY
+            normalized_main
+    ),
+    
+    -- Match only on distinct values to reduce cartesian product size
+    distinct_matches AS (
+        SELECT 
+            d.normalized_main,
+            m.*,
+            ROW_NUMBER() OVER (
+                PARTITION BY d.normalized_main
+                ORDER BY 
+                    m.substring_length {'DESC' if prefer_longer_match else 'ASC'},
+                    m.{mapping_column}
+            ) AS match_rank
+        FROM 
+            distinct_main d
+        CROSS JOIN 
+            mapping_normalized m
+        WHERE 
+            POSITION(m.normalized_mapping IN d.normalized_main) > 0
+    ),
+    
+    -- Join best matches back to full dataset
     ranked_matches AS (
         SELECT 
             m.*,
-            d.*,
-            ROW_NUMBER() OVER (
-                PARTITION BY {', '.join([f'm.{col}' for col in main_df.columns])}
-                ORDER BY 
-                    d.substring_length {'DESC' if prefer_longer_match else 'ASC'},  -- Order by length based on preference
-                    d.{mapping_column}  -- Consistent tiebreaker
-            ) AS match_rank
+            dm.* EXCLUDE (normalized_main, match_rank),
+            dm.match_rank
         FROM 
             main_normalized m
-        CROSS JOIN 
-            mapping_normalized d
-        WHERE 
-            POSITION(d.normalized_mapping IN m.normalized_main) > 0
+        LEFT JOIN 
+            distinct_matches dm
+        ON 
+            m.normalized_main = dm.normalized_main
+            AND dm.match_rank = 1
     )
     
     -- Get only the best match for each main row
@@ -804,7 +831,6 @@ def merge_substring_mapping(main_df, mapping_df,
     result = duckdb.query_df(tables, query).to_df()
     
     return result
-
 
 
 # Perform the merge, preferring longer substring matches
