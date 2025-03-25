@@ -747,8 +747,17 @@ def merge_substring_mapping(main_df, mapping_df,
     conn.register('mapping_table', mapping_df)
     
     # Get the columns we'll need to exclude in the final query
-    exclude_cols = ', '.join([f'bm.{col}' for col in main_df.columns if col != main_column])
+    #exclude_cols = ', '.join([f'bm.{col}' for col in main_df.columns if col != main_column])
+    Get the list of mapping columns to include (excluding those that overlap with main)
+    mapping_cols_to_include = [col for col in mapping_df.columns if col != mapping_column and col not in main_df.columns]
     
+    # Create the column selection part of the query
+    if mapping_cols_to_include:
+        mapping_col_selection = ', '.join([f'bm.{col}' for col in mapping_cols_to_include])
+        final_selection = f"m.*, bm.{mapping_column}, {mapping_col_selection}"
+    else:
+        final_selection = f"m.*, bm.{mapping_column}"
+
     # Create efficient SQL using DuckDB-specific features
     query = f"""
     WITH 
@@ -786,10 +795,9 @@ def merge_substring_mapping(main_df, mapping_df,
     )
     
     -- Join back to original main table
+    - Join back to original main table
     SELECT 
-        m.*,
-        -- All mapping columns excluding any that would conflict with main table columns
-        bm.* EXCLUDE ({main_column}, substr_len{', ' + exclude_cols if exclude_cols else ''})
+        {final_selection}
     FROM 
         main_table m
     LEFT JOIN 
