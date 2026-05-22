@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep Agents, LangGraph & LangSmith Demo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/blood.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/highlight/monokai.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&family=Roboto+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent-cyan: #00f2ff;
+            --accent-blue: #0072ff;
+            --glass-bg: rgba(0, 5, 15, 0.75); /* Darker and more opaque for better contrast */
+            --glass-border: rgba(0, 242, 255, 0.2);
+            --text-main: #ffffff;
+            --text-dim: #b0b0b0;
+        }
+
+        body {
+            background-color: #010409;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+
+        .reveal {
+            background: url('file:///Users/romanroman/.gemini/antigravity/brain/341d0fec-6168-4117-92c1-4c91528ecb39/deep_agents_clean_bg_1779423210776.png') no-repeat center center fixed;
+            background-size: cover;
+        }
+
+        .reveal .slides section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 50px;
+            box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.6);
+            transition: all 0.3s ease;
+            max-height: 90vh; /* Ensure slides don't exceed screen height */
+            overflow-y: auto; /* Allow scrolling within the slide if content is too long */
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent-cyan) rgba(255, 255, 255, 0.1);
+        }
+
+        /* Custom scrollbar for better aesthetics */
+        .reveal .slides section::-webkit-scrollbar {
+            width: 6px;
+        }
+        .reveal .slides section::-webkit-scrollbar-thumb {
+            background-color: var(--accent-cyan);
+            border-radius: 10px;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Inter', sans-serif !important;
+            font-weight: 700 !important;
+            text-transform: none !important;
+            color: var(--accent-cyan) !important;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 242, 255, 0.3) !important;
+            margin-bottom: 30px !important;
+        }
+
+        h1 { font-size: 2.8em !important; }
+        h2 { font-size: 2em !important; }
+
+        p, li {
+            color: var(--text-main) !important;
+            font-size: 1em !important;
+            line-height: 1.6 !important;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important; /* Shadow for better readability over bright spots */
+        }
+
+        .accent-text {
+            color: var(--accent-cyan);
+            font-weight: 700;
+        }
+
+        .code-container {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+            background: rgba(0, 0, 0, 0.5);
+            margin-top: 20px;
+        }
+
+        .reveal pre {
+            box-shadow: none !important;
+            width: 100% !important;
+            margin: 0 !important;
+        }
+
+        .reveal pre code {
+            padding: 20px !important;
+            border-radius: 0 !important;
+            font-family: 'Roboto Mono', monospace !important;
+            font-size: 0.8em !important;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .feature-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid var(--accent-cyan);
+            text-align: left;
+        }
+
+        .feature-item h3 {
+            font-size: 1.3em !important;
+            margin-bottom: 10px !important;
+            color: #fff !important;
+        }
+
+        .feature-item p {
+            font-size: 0.85em !important;
+            color: var(--text-dim) !important;
+        }
+
+        .stack-diagram {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin: 40px 0;
+        }
+
+        .stack-layer {
+            width: 85%;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 700;
+            border: 1px solid var(--accent-cyan);
+            font-size: 1.2em;
+            letter-spacing: 1px;
+        }
+
+        .layer-top { background: linear-gradient(90deg, rgba(0, 242, 255, 0.1), rgba(0, 114, 255, 0.1)); }
+        .layer-mid { background: linear-gradient(90deg, rgba(0, 114, 255, 0.1), rgba(0, 242, 255, 0.05)); }
+        .layer-bot { background: rgba(255, 255, 255, 0.05); }
+
+        .reveal .progress { height: 5px; color: var(--accent-cyan); }
+        .reveal .controls { color: var(--accent-cyan); }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+            <!-- Title Slide -->
+            <section>
+                <h1>Deep Agents</h1>
+                <h2 style="color: #fff !important; font-size: 1.2em;">LangGraph & LangSmith Ecosystem</h2>
+                <p>The Next Generation of AI Agent Workflows</p>
+                <div style="margin-top: 50px; font-size: 0.8em; opacity: 0.7;">
+                    Presented for Demo Purposes
+                </div>
+            </section>
+
+            <!-- Architecture Slide -->
+            <section>
+                <h2>The Modern AI Stack</h2>
+                <div class="stack-diagram">
+                    <div class="stack-layer layer-top">Deep Agents (The Harness)</div>
+                    <div style="color: var(--accent-cyan);">↓</div>
+                    <div class="stack-layer layer-mid">LangGraph (The Runtime)</div>
+                    <div style="color: var(--accent-cyan);">↓</div>
+                    <div class="stack-layer layer-bot">LangChain (The Foundation)</div>
+                </div>
+                <p style="margin-top: 20px; font-size: 0.8em !important;">
+                    A layered approach combining opinionated planning, stateful execution, and modular building blocks.
+                </p>
+            </section>
+
+            <!-- LangGraph Slide -->
+            <section>
+                <h2>What is LangGraph?</h2>
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <h3>Stateful Graphs</h3>
+                        <p>Model complex loops and conditional logic as a state machine.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h3>Persistence</h3>
+                        <p>Built-in checkpointing allows agents to resume after failure or human-in-the-loop steps.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h3>Streaming</h3>
+                        <p>Real-time updates of token output and internal state changes.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h3>Cycles</h3>
+                        <p>Unlike standard chains, graphs support multi-step reasoning loops.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Deep Agents Slide -->
+            <section>
+                <h2>What is Deep Agents?</h2>
+                <p class="accent-text">The "Opinionated Harness" for LangGraph</p>
+                <ul style="font-size: 0.8em !important;">
+                    <li><span class="accent-text">Built-in Planning:</span> High-level task decomposition using <code style="color: var(--accent-cyan);">write_todos</code>.</li>
+                    <li><span class="accent-text">Sub-agent Delegation:</span> Offload complex sub-tasks to isolated agents to save context window.</li>
+                    <li><span class="accent-text">Virtual Filesystem:</span> Pluggable memory storage for long-term data and large context management.</li>
+                    <li><span class="accent-text">Human-in-the-Loop:</span> Native hooks for manual oversight and decision steering.</li>
+                </ul>
+            </section>
+
+            <!-- LangSmith Slide -->
+            <section>
+                <h2>The Role of LangSmith</h2>
+                <p>Developing with confidence at 100x speed.</p>
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <h3>Tracing</h3>
+                        <p>Visualize the full trajectory of agent reasoning, tool calls, and LLM outputs.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h3>Evaluation</h3>
+                        <p>Test your agents against benchmark datasets and automate regression checks.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h3>Debugging</h3>
+                        <p>Find where loops get stuck or tools hallucinate with detailed run history.</p>
+                    </div>
+                    <div class="feature-item">
+                        <h3>Monitoring</h3>
+                        <p>Track latency, costs, and token usage in production environments.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Code Slide -->
+            <section>
+                <h2>How to Use</h2>
+                <div class="code-container">
+                    <pre><code class="language-python">from deepagents import create_deep_agent
+
+# 1. Define a specialized sub-agent
+coder = {
+    "name": "developer",
+    "description": "Writes and debugs Python code.",
+    "tools": [python_repl_tool],
+}
+
+# 2. Initialize the Harness
+agent = create_deep_agent(
+    model="gpt-4o",
+    subagents=[coder],
+    memory="local_fs"
+)
+
+# 3. Execute with planning
+agent.invoke({"messages": [{"role": "user", "content": "Build a CSV parser"}]})</code></pre>
+                </div>
+            </section>
+
+            <!-- Conclusion Slide -->
+            <section>
+                <h1>Ready for Demo?</h1>
+                <p>Combining these tools enables agents that can <strong>plan</strong>, <strong>remember</strong>, <strong>delegate</strong>, and <strong>scale</strong>.</p>
+                <div style="margin-top: 30px;">
+                    <span style="padding: 10px 20px; border: 2px solid var(--accent-cyan); border-radius: 50px; color: var(--accent-cyan);">Start Demo</span>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/highlight/highlight.min.js"></script>
+    <script>
+        Reveal.initialize({
+            hash: true,
+            plugins: [ RevealHighlight ],
+            transition: 'convex',
+            backgroundTransition: 'fade',
+            // Better scaling for responsiveness
+            width: 1200,
+            height: 800,
+            margin: 0.1,
+            minScale: 0.2,
+            maxScale: 2.0,
+            center: true,
+            touch: true,
+            // Enable mouse wheel for navigation
+            mouseWheel: true
+        });
+    </script>
+</body>
+</html>
