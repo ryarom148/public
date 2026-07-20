@@ -1,0 +1,69 @@
+Slide 5: Licensing, Security, and Compliance Implications
+Navigating the Spectrum of "Open" Licenses:
+Permissive Licensing: Models like Google's Gemma 4 and OpenAI's gpt-oss-120b are released under the highly permissive Apache 2.0 license
+. This allows for unrestricted commercial use, fine-tuning, and self-hosting without complex legal barriers
+.
+Restrictive Community Licenses: The Llama family utilizes a Community License Agreement
+. While it permits broad commercial use, it explicitly limits massive-scale deployment and restricts you from using the model's outputs to train competing models
+.
+Operational Security at the Edge:
+Agentic Prompt Injection: In automated financial workflows, Small Language Models (SLMs) frequently process untrusted external inputs like client emails, PDFs, or chat transcripts
+. This makes prompt injection a critical operational risk, as malicious hidden instructions can override system prompts to leak proprietary data or trigger unauthorized actions
+.
+Visual PII Leakage: Multimodal SLMs reading financial documents or identity cards can inadvertently capture and retain Personally Identifiable Information (PII) like faces and physical addresses
+. Organizations must implement automated visual sanitization pipelines so that raw assets are not improperly stored during debugging or retraining
+.
+Strict Regulatory Compliance (2026):
+HIPAA & GDPR: Using public APIs means exposing sensitive data to third-party processors, requiring complex Business Associate Agreements (BAAs) or Data Processing Agreements (DPAs)
+. Self-hosting an open-weight model locally bypasses these third-party risks entirely, guaranteeing data never leaves your environment
+.
+EU AI Act (August 2026): High-risk financial AI systems (such as those used for credit scoring) face full enforcement by August 2026
+. They will require strict audit trails, human oversight, and third-party conformity assessments that cost between €20,000 and €80,000
+. Owning and hosting your own models is the most reliable way to provide the precise transparency required to pass these audits
+
+Slide 4: Why We Must Fine-Tune, Distill & Specialized Use Cases
+Why Fine-Tune?
+Knowledge Density & Strict Formatting: Fine-tuning guarantees consistent output formats (like strict JSON for backend systems) and injects specialized domain knowledge that base models lack
+.
+Extreme Cost-Efficiency: Using Parameter-Efficient Fine-Tuning (PEFT) like LoRA, you can adapt a 7B-8B parameter model using just a few gigabytes of VRAM. This can cost under $10 in cloud compute to train, making it vastly cheaper than relying on expensive API prompt engineering
+.
+What is Model Distillation & Why Do We Need It?
+The Process: Distillation is a compression technique where a smaller "student" model learns directly from the exact probabilities (logits) of a massive "teacher" model, effectively transferring advanced reasoning into a compact package
+.
+The Benefit: While fine-tuning adapts a model, distillation permanently shrinks it. This allows us to run frontier-level logic entirely offline on local edge devices (like mobile phones) with near-zero latency and massive cost reductions
+.
+Specialized Use Cases & Market Models:
+Document Understanding & OCR: Financial institutions process massive volumes of PDFs and messy tables. MiniCPM-Llama3-V 2.5 (8B) excels at Optical Character Recognition (OCR), extracting data, and converting complex tables into clean formats natively on edge devices with an incredibly low 10.3% hallucination rate
+.
+Cybersecurity & Secure Coding: Deep code repository repair must be done locally to prevent exposing vulnerabilities to public APIs. DeepSeek-Coder-V2 acts as a localized "extra developer" pre-trained on 338 programming languages, operating entirely on internal secure systems
+.
+Uncensored & Unfiltered Analysis: Internal security red-teaming and fraud simulation require models without rigid alignment filters. Koala (13B) is highly capable but relatively uncensored; unlike proprietary models that refuse requests based on "ethical and moral principles," it will process adversarial prompts for controlled internal security testing
+
+
+Slide 3: Economics of Cloud Deployment (Managed APIs vs. Cloud Self-Hosting)
+Capping Infinite Variable Costs: Managed API pricing scales non-linearly with volume
+. By self-hosting Small Language Models on our own dedicated cloud GPU instances, we convert unpredictable, infinite per-token billing into a flat, predictable hourly infrastructure cost.
+The 15M–50M Token Cloud Break-Even: Renting a dedicated cloud GPU to host an SLM breaks even against managed API pricing once our sustained volume exceeds 15 million to 50 million tokens per month (approx. 500,000 tokens per day)
+. Beyond this threshold, our cloud-hosted inference becomes significantly cheaper than paying API fees.
+Bypassing the Output Token Premium: Managed APIs charge 2x to 6x more for generating output tokens compared to reading inputs
+. Self-hosting our own models in the cloud completely eliminates this premium, drastically reducing the cost of generative tasks like reporting and summarization.
+Spot Pricing & Cognitive Routing: Utilizing specialized cloud spot-market GPUs can reduce our raw compute rental costs by 60% to 70%
+. Furthermore, by routing 70% to 90% of our high-volume, structured tasks to these low-cost cloud SLM instances, we reserve expensive proprietary APIs strictly for complex reasoning
+
+Slide 1: Why We Need Open-Source Models
+Data Sovereignty & Strict Privacy: Transmitting sensitive financial data to third-party APIs presents massive compliance risks (e.g., GDPR, HIPAA). Deploying open-weight models within our own secure Virtual Private Cloud (VPC) guarantees complete control over data flows and prevents external logging
+.
+Superior Economics at Scale: Proprietary APIs suffer from output token premiums and hidden prompt overhead costs. By self-hosting open-source models, we can bypass these premiums and optimize long-term inference expenditures, hitting break-even points much faster at scale
+.
+High Knowledge Density & Customization: General-purpose frontier models are over-engineered for specific corporate tasks. Open-source models allow us to use Parameter-Efficient Fine-Tuning (PEFT) on our proprietary data, achieving the same performance as massive models but with a much higher density of specialized financial knowledge
+.
+Network Independence & Zero Latency: Local open-source inference eliminates network round-trip delays and bandwidth costs, enabling real-time processing and guaranteeing offline functionality for critical systems
+.
+Slide 2: Classification of the 2026 Open-Source Ecosystem
+Large Flagships & Giants: Top-tier open-weights directly rivaling closed frontier models. This includes GLM-5.2 (currently topping the Intelligence Index)
+, Hy3 from Tencent (a brand new competitor delivering massive economic value at just $0.21 per 1M output tokens)
+, and Muse Spark (Meta's new replacement for the older Llama series).
+Small Language Models (SLMs): Efficient models taking on the giants, such as VibeThinker 3B and Google's Gemma 4, which brings frontier-level reasoning to edge devices under a commercially permissive Apache 2.0 license
+.
+Ultra-Small & Edge Models: Models pushing the absolute limits of local edge computing. Examples include MiniCPM5 (1B) and MiniCPM-V 4.6 (a tiny vision model designed for agents), as well as Cactus Needle (26M), an incredibly tiny model built explicitly for function-calling.
+Specialized Domain & Agentic Models: Precision models engineered for specific tasks. This includes Granite 4.1 (highlighted for its extreme speed in automated speech recognition, highly relevant for our financial use cases), Ornith 1.0 (a new agentic coding LLM), and Qwen-AgentWorld (a world model built explicitly for autonomous agents).
