@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executive Briefing: AI Agent Harness Architecture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfeff',
+                            100: '#cffafe',
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                            900: '#164e63',
+                        },
+                        accent: {
+                            blue: '#3b82f6',
+                            indigo: '#6366f1',
+                            emerald: '#10b981',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 720px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 320px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 380px;
+            }
+        }
+        .gradient-border {
+            background: linear-gradient(135deg, rgba(6,182,212,0.3) 0%, rgba(99,102,241,0.1) 100%);
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.6);
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen selection:bg-brand-500 selection:text-white">
+
+    <header class="sticky top-0 z-50 glass-card border-b border-slate-800/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl">⚙️</span>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight text-white tracking-wide">HARNESS <span class="text-brand-400">ENGINEERING</span></h1>
+                    <p class="text-xs text-slate-400">Executive Architecture & Enterprise IP Moat</p>
+                </div>
+            </div>
+            <nav class="hidden xl:flex space-x-5 text-sm font-medium">
+                <a href="#paradigm" class="text-slate-300 hover:text-brand-400 transition-colors">Paradigm</a>
+                <a href="#ceiling" class="text-slate-300 hover:text-brand-400 transition-colors">Ceiling</a>
+                <a href="#anatomy" class="text-slate-300 hover:text-brand-400 transition-colors">Anatomy</a>
+                <a href="#bridges" class="text-slate-300 hover:text-brand-400 transition-colors">6 Bridges</a>
+                <a href="#memory" class="text-slate-300 hover:text-brand-400 transition-colors">Memory</a>
+                <a href="#loops" class="text-slate-300 hover:text-brand-400 transition-colors">Loops</a>
+                <a href="#graphs" class="text-slate-300 hover:text-brand-400 transition-colors">Graphs</a>
+                <a href="#reality" class="text-slate-300 hover:text-brand-400 transition-colors">The Moat</a>
+            </nav>
+            <div class="flex items-center space-x-2">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-500/10 text-brand-400 border border-brand-500/20">
+                    ● Executive Briefing
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+
+        <!-- HERO SECTION -->
+        <section class="relative overflow-hidden rounded-2xl p-8 md:p-12 gradient-border glass-card">
+            <div class="relative z-10 max-w-3xl space-y-4">
+                <div class="inline-flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-brand-400 bg-brand-900/40 px-3 py-1 rounded-full border border-brand-500/30">
+                    <span>Strategic Architecture Specification</span>
+                </div>
+                <h2 class="text-3xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
+                    Models are Commodities. <br>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-accent-indigo to-accent-blue">The Harness Sets the Ceiling.</span>
+                </h2>
+                <p class="text-slate-300 text-base md:text-lg leading-relaxed">
+                    Foundation model intelligence updates and commoditizes quarterly. Long-term enterprise advantage is captured entirely at the <strong>harness layer</strong>—combining virtual memory paging, deterministic verification loops, and state-machine graphs to transform stochastic token boxes into reliable software engines[cite: 4].
+                </p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-8 border-t border-slate-800">
+                <div class="glass-card p-4 rounded-xl text-center">
+                    <div class="text-2xl md:text-3xl font-extrabold text-brand-400">Agent = Model + Harness</div>
+                    <div class="text-xs text-slate-400 mt-1 uppercase font-semibold">The Fundamental Paradigm</div>
+                </div>
+                <div class="glass-card p-4 rounded-xl text-center">
+                    <div class="text-2xl md:text-3xl font-extrabold text-accent-emerald">97.0%</div>
+                    <div class="text-xs text-slate-400 mt-1 uppercase font-semibold">Gated 30-Step Success Rate</div>
+                </div>
+                <div class="glass-card p-4 rounded-xl text-center">
+                    <div class="text-2xl md:text-3xl font-extrabold text-accent-blue">70%–85%</div>
+                    <div class="text-xs text-slate-400 mt-1 uppercase font-semibold">Virtual Memory Token Savings</div>
+                </div>
+                <div class="glass-card p-4 rounded-xl text-center">
+                    <div class="text-2xl md:text-3xl font-extrabold text-accent-amber">Exit Code 0</div>
+                    <div class="text-xs text-slate-400 mt-1 uppercase font-semibold">Deterministic Termination Gate</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 1. PARADIGM -->
+        <section id="paradigm" class="space-y-6">
+            <div class="space-y-2">
+                <h3 class="text-2xl font-bold text-white flex items-center gap-2">
+                    <span>🖥️</span> 1. The Agentic Paradigm: Model vs. Harness
+                </h3>
+                <p class="text-slate-300 leading-relaxed max-w-4xl">
+                    In a standard web chat interface, a human manually acts as the harness—copying code, executing local tests, reading error logs, and reprompting. Software harness engineering automates this shuttling loop. The base model serves as the raw, probabilistic engine, while the harness straps it to a goal, steers its actions, and enforces safety boundaries[cite: 4].
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="glass-card p-6 rounded-xl space-y-4 border-l-4 border-l-accent-rose">
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-lg font-bold text-slate-200">Probabilistic Base Model (The Engine)</h4>
+                        <span class="text-xs px-2 py-1 rounded bg-accent-rose/10 text-accent-rose font-mono">Stateless Kernel</span>
+                    </div>
+                    <ul class="space-y-3 text-sm text-slate-300">
+                        <li class="flex items-start gap-2">
+                            <span class="text-accent-rose font-bold">✕</span>
+                            <span><strong>Function:</strong> Generates text token continuations based on statistical weights.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-accent-rose font-bold">✕</span>
+                            <span><strong>Execution:</strong> Incapable of executing shell binaries or verifying its own code output.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-accent-rose font-bold">✕</span>
+                            <span><strong>Reliability:</strong> Suffers from context rot and hallucinated success states.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="glass-card p-6 rounded-xl space-y-4 border-l-4 border-l-brand-400">
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-lg font-bold text-slate-200">Deterministic Harness (The Vehicle)</h4>
+                        <span class="text-xs px-2 py-1 rounded bg-brand-500/10 text-brand-400 font-mono">Execution Runtime</span>
+                    </div>
+                    <ul class="space-y-3 text-sm text-slate-300">
+                        <li class="flex items-start gap-2">
+                            <span class="text-brand-400 font-bold">✓</span>
+                            <span><strong>Function:</strong> Orchestrates memory paging, tool invocation, and state transitions.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-brand-400 font-bold">✓</span>
+                            <span><strong>Execution:</strong> Manages sandboxed file systems, compilers, and test suites.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-brand-400 font-bold">✓</span>
+                            <span><strong>Reliability:</strong> Enforces closed-loop self-correction via machine exit codes.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. THE PERFORMANCE CEILING & MATH -->
+        <section id="ceiling" class="glass-card p-6 md:p-8 rounded-2xl space-y-6">
+            <div class="space-y-2">
+                <h3 class="text-2xl font-bold text-white flex items-center gap-2">
+                    <span>📈</span> 2. The Performance Ceiling & Compounding Failure Math
+                </h3>
+                <p class="text-slate-300 leading-relaxed">
+                    In multi-step unassisted execution, overall trajectory success decays exponentially: <span class="font-mono text-brand-400">P = (p_step)^N</span>. Upgrading raw model weights merely delays system failure. A production harness introduces deterministic verification gates that detect errors immediately and reset compounding risk back to baseline[cite: 4].
+                </p>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-8 items-center">
+                <div class="lg:col-span-2">
+                    <div class="chart-container">
+                        <canvas id="failureChart"></canvas>
+                    </div>
+                    <p class="text-xs text-slate-400 text-center mt-3">
+                        Figure 1: Cumulative Success Probability across N Autonomous Steps. Gated verification halts exponential decay.
+                    </p>
+                </div>
+
+                <div class="glass-card p-6 rounded-xl space-y-4 bg-slate-900/60 border border-slate-700">
+                    <h4 class="text-md font-bold text-brand-400 uppercase tracking-wider text-xs">Interactive Simulator</h4>
+                    <h5 class="text-lg font-semibold text-white">Trajectory Success Modeler</h5>
+                    
+                    <div class="space-y-3 text-sm">
+                        <div>
+                            <div class="flex justify-between text-xs text-slate-300 mb-1">
+                                <span>Execution Steps (N):</span>
+                                <span id="stepsVal" class="font-bold text-brand-400">20 Steps</span>
+                            </div>
+                            <input id="stepsInput" type="range" min="1" max="40" value="20" class="w-full accent-brand-400 bg-slate-700 h-2 rounded-lg cursor-pointer">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs text-slate-300 mb-1">
+                                <span>Single-Step Accuracy (p):</span>
+                                <span id="accVal" class="font-bold text-accent-blue">98.0%</span>
+                            </div>
+                            <input id="accInput" type="range" min="90" max="99" value="98" step="0.5" class="w-full accent-accent-blue bg-slate-700 h-2 rounded-lg cursor-pointer">
+                        </div>
+                    </div>
+
+                    <div class="p-4 rounded-lg bg-slate-950 border border-slate-800 space-y-2 text-xs">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Raw Model Trajectory:</span>
+                            <span id="unassistedRes" class="font-mono font-bold text-accent-rose">66.8%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Harness + Gated Verification:</span>
+                            <span id="harnessRes" class="font-mono font-bold text-accent-emerald">98.0%</span>
+                        </div>
+                        <div class="border-t border-slate-800 pt-2 flex justify-between font-semibold">
+                            <span class="text-slate-200">Reliability Lift:</span>
+                            <span id="diffRes" class="font-mono text-brand-400">+31.2%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. ANATOMY OF AN ENTERPRISE HARNESS -->
+        <section id="anatomy" class="space-y-6">
+            <div class="space-y-2">
+                <h3 class="text-2xl font-bold text-white flex items-center gap-2">
+                    <span>⚙️</span> 3. Anatomy of an Enterprise Harness & Dynamic Router
+                </h3>
+                <p class="text-slate-300 leading-relaxed">
+                    An enterprise harness operates through three tightly coupled subsystems that isolate the LLM from direct environmental contact while maintaining maximal operational velocity.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="glass-card p-6 rounded-xl space-y-3 border-t-4 border-t-brand-400">
+                    <span class="text-xs font-mono text-brand-400 uppercase tracking-wider font-bold">Subsystem 01</span>
+                    <h4 class="text-lg font-bold text-white">Context Manager</h4>
+                    <p class="text-sm text-slate-300">
+                        Filters out redundant transcript noise, manages sliding windows, and paginates large repositories to ensure token efficiency and prevent context rot.
+                    </p>
+                </div>
+
+                <div class="glass-card p-6 rounded-xl space-y-3 border-t-4 border-t-accent-blue">
+                    <span class="text-xs font-mono text-accent-blue uppercase tracking-wider font-bold">Subsystem 02</span>
+                    <h4 class="text-lg font-bold text-white">Tool Executor</h4>
+                    <p class="text-sm text-slate-300">
+                        Provides secure, sandboxed container environments where models can run bash scripts, invoke compilers, execute SQL queries, and perform API calls safely.
+                    </p>
+                </div>
+
+                <div class="glass-card p-6 rounded-xl space-y-3 border-t-4 border-t-accent-emerald">
+                    <span class="text-xs font-mono text-accent-emerald uppercase tracking-wider font-bold">Subsystem 03</span>
+                    <h4 class="text-lg font-bold text-white">Control Loop & Router</h4>
+                    <p class="text-sm text-slate-300">
+                        The central logic engine managing task execution flow, dynamic model routing (SLMs vs. frontier reasoners), and termination verification gates.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. THE 6 CAPABILITY BRIDGES -->
+        <section id="bridges" class="space-y-6">
+            <div class="space-y-2">
+                <h3 class="text-2xl font-bold text-white flex items-center gap-2">
+                    <span>🌉</span> 4. The 6 Capability Bridges of Harness Architecture
+                </h3>
+                <p class="text-slate-300 leading-relaxed">
+                    The infrastructure layer bridges the execution gap between probabilistic text generation and rigorous enterprise systems[cite: 4].
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="glass-card p-6 rounded-xl hover:border-brand-500/50 transition-all space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl">📁</span>
+                        <span class="text-xs font-bold text-brand-400 px-2 py-0.5 rounded bg-brand-500/10">Bridge 1</span>
+                    </div>
+                    <h4 class="text-lg font-bold text-white">Durable Data & Git</h4>
+                    <p class="text-xs text-brand-400 font-semibold">Persistent State Management</p>
+                    <p class="text-sm text-slate-300">
+                        Moves state out of the volatile context window into file systems and version control, allowing atomic rollbacks and full repository auditability[cite: 4].
+                    </p>
+                </div>
+
+                <div class="glass-card p-6 rounded-xl hover:border-brand-500/50 transition-all space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl">💻</span>
+                        <span class="text-xs font-bold text-brand-400 px-2 py-0.5 rounded bg-brand-500/10">Bridge 2</span>
+                    </div>
+                    <h4 class="text-lg font-bold text-white">Code Execution</h4>
+                    <p class="text-xs text-brand-400 font-semibold">Active Subprocess Runtimes</p>
+                    <p class="text-sm text-slate-300">
+                        Generates CLI tool interfaces enabling models to invoke compilers, linters, package managers, and test runners directly[cite: 4].
+                    </p>
+                </div>
+
+                <div class="glass-card p-6 rounded-xl hover:border-brand-500/50 transition-all space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl">🛡️</span>
+                        <span class="text-xs font-bold text-brand-400 px-2 py-0.5 rounded bg-brand-500/10">Bridge 3</span>
+                    </div>
+                    <h4 class="text-lg font-bold text-white">Safe Defaults</h4>
+                    <p class="text-xs text-brand-400 font-semibold">Containerized Isolation</p>
+                    <p class="text-sm text-slate-300">
+                        Enforces POSIX container sandboxing and dual-ring permissions to prevent destructive system alterations or data exfiltration[cite: 4].
+                    </p>
+                </div>
+
+                <div class="glass-card p-6 rounded-xl hover:border-brand-500/50 transition-all space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl">🧠</span>
+                        <span class="text-xs font-bold text-brand-400 px-2 py-0.5 rounded bg-brand-500/10">Bridge 4</span>
+                    </div>
+                    <h4 class="text-lg font-bold text-white">New Knowledge (MCP)</h4>
+                    <p class="text-xs text-brand-400 font-semibold">Dynamic Retrieval Protocols</p>
+                    <p class="text-sm text-slate-300">
+                        Integrates Model Context Protocol (MCP), live web tools, and local `AGENTS.md` rules to bypass fixed training cutoffs[cite: 4].
+                    </p>
+                </div>
+
+                <div class="glass-card p-6 rounded-xl hover:border-brand-500/50 transition-all space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl">⚡</span>
+                        <span class="text-xs font-bold text-brand-400 px-2 py-0.5 rounded bg-brand-500/10">Bridge 5</span>
+                    </div>
+                    <h4 class="text-lg font-bold text-white">Long Context & Virtual Memory</h4>
+                    <p class="text-xs text-brand-400 font-semibold">Context Paging Architecture</p>
+                    <p class="text-sm text-slate-300">
+                        Utilizes Cap, Slice, Search, and Store primitives to maintain long-horizon coherence without attention degradation[cite: 4].
+                    </p>
+                </div>
+
+                <div class="glass-card p-6 rounded-xl hover:border-brand-500/50 transition-all space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl">🔁</span>
+                        <span class="text-xs font-bold text-brand-400 px-2 py-0.5 rounded bg-brand-500/10">Bridge 6</span>
+                    </div>
+                    <h4 class="text-lg font-bold text-white">Reliable Outcomes</h4>
+                    <p class="text-xs text-brand-400 font-semibold">Deterministic Termination Gates</p>
+                    <p class="text-sm text-slate-300">
+                        Mandates passing unit tests and zero compiler warnings before task completion, eliminating unverified code handoffs[cite: 4].
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. VIRTUAL MEMORY ENGINEERING -->
+        <section id="memory" class="glass-card p-6 md:p-8 rounded-2xl space-y-6">
+            <div class="space-y-2">
+                <h3 class="text-2xl font-bold text-white flex items-center gap-2">
+                    <span>🧠</span> 5. Virtual Memory Engineering & Context Paging
+                </h3>
+                <p class="text-slate-300 leading-relaxed">
+                    Raw LLM context windows suffer from attention degradation and context rot when flooded with raw logs. Harness engineering treats memory like a database operating system via a 4-step paging framework:
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-4 gap-4">
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                    <div class="text-brand-400 font-mono font-bold text-sm">01 / CAP</div>
+                    <h4 class="text-white font-semibold text-sm">Truncation & Budgets</h4>
+                    <p class="text-xs text-slate-400">Hard token limits on tool outputs and intermediate shell responses to prevent context bloat.</p>
+                </div>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                    <div class="text-brand-400 font-mono font-bold text-sm">02 / SLICE</div>
+                    <h4 class="text-white font-semibold text-sm">AST Line Offsets</h4>
+                    <p class="text-xs text-slate-400">Pulling precise symbol definitions and line ranges instead of injecting entire multi-thousand line files.</p>
+                </div>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                    <div class="text-brand-400 font-mono font-bold text-sm">03 / SEARCH</div>
+                    <h4 class="text-white font-semibold text-sm">Semantic Retrieval</h4>
+                    <p class="text-xs text-slate-400">Using `ripgrep` and vector embeddings to fetch relevant context on-demand dynamically.</p>
+                </div>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                    <div class="text-brand-400 font-mono font-bold text-sm">04 / STORE</div>
+                    <h4 class="text-white font-semibold text-sm">Disk Pointers</h4>
+                    <p class="text-xs text-slate-400">Offloading large build artifacts to disk references, cutting token consumption by 70%–85%[cite: 4].</p>
+                </div>
+            </div>
+
+            <div class="chart-container mt-6">
+                <canvas id="tokenChart"></canvas>
+            </div>
+            <p class="text-xs text-slate-400 text-center">
+                Figure 2: Relative Token Consumption Comparison (Naive Transcript vs. Virtual Memory Paging).
+            </p>
+        </section>
+
+        <!-- 6. LOOP ENGINEERING -->
+        <section id="loops" class="glass-card p-6 md:p-8 rounded-2xl space-y-6">
+            <div class="space-y-2">
+                <h3 class="text-2xl font-bold text-white flex items-center gap-2">
+                    <span>🔄</span> 6. Loop Engineering & Closed-Loop Self-Correction
+                </h3>
+                <p class="text-slate-300 leading-relaxed">
+                    A raw model generates text and stops. A production harness runs a continuous verification loop: Action → Feedback → Correction. When a compiler or test runner fails, the harness intercepts `stderr` logs and feeds them directly back into the model's next prompt turn[cite: 4].
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+                    <h4 class="text-md font-bold text-white flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-accent-rose"></span> One-Shot Fragility (Unharnessed)
+                    </h4>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Any runtime exception, type mismatch, or syntax bug results in immediate task failure. The model has no native ability to observe the real-world consequence of its code execution without harness instrumentation.
+                    </p>
+                </div>
+
+                <div class="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+                    <h4 class="text-md font-bold text-white flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-accent-emerald"></span> Compiler-Driven Loops (Harnessed)
+                    </h4>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        The harness treats compiler errors as structured feedback. The model iterates autonomously, fixing types and syntax errors until the test suite returns deterministic <code class="text-brand-400 font-mono">Exit Code 0</code>.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. GRAPH ENGINEERING -->
+        <section id="graphs" class="space-y-6">
+            <div class="space-y-2">
+                <h3 class="text-2xl font-bold text-white flex items-center gap-2">
+                    <span>🌐</span> 7. Graph Engineering: Multi-Agent Orchestration
+                </h3>
+                <p class="text-slate-300 leading-relaxed">
+                    Scaling beyond single-agent loops requires moving from open-ended chat rooms to strict Directed Acyclic Graphs (DAGs) like LangGraph. The state payload is passed deterministically between specialized nodes[cite: 4].
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="glass-card p-6 rounded-xl space-y-3">
+                    <div class="text-2xl">🔀</div>
+                    <h4 class="text-lg font-bold text-white">State Machine Routing</h4>
+                    <p class="text-sm text-slate-300">Workflows are structured as deterministic state transitions where data and variables pass securely from node to node.</p>
+                </div>
+                <div class="glass-card p-6 rounded-xl space-y-3">
+                    <div class="text-2xl">🎯</div>
+                    <h4 class="text-lg font-bold text-white">Narrow Scoping</h4>
+                    <p class="text-sm text-slate-300">Specialized agents have isolated tool permissions (e.g., Data Agent has SQL access; Coding Agent has file editing access).</p>
+                </div>
+                <div class="glass-card p-6 rounded-xl space-y-3">
+                    <div class="text-2xl">⏸️</div>
+                    <h4 class="text-lg font-bold text-white">Human-in-the-Loop Gates</h4>
+                    <p class="text-sm text-slate-300">Execution state can pause indefinitely at approval nodes, waiting for executive sign-off before deploying changes.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 8. THE ARCHITECTURAL REALITY / THE MOAT -->
+        <section id="reality" class="glass-card p-8 md:p-12 rounded-2xl gradient-border space-y-6">
+            <div class="max-w-3xl space-y-4">
+                <div class="inline-flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-brand-400 bg-brand-900/40 px-3 py-1 rounded-full border border-brand-500/30">
+                    <span>Executive Conclusion</span>
+                </div>
+                <h3 class="text-2xl md:text-4xl font-extrabold text-white tracking-tight">
+                    The Architectural Reality: <br>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-accent-indigo to-accent-blue">The Harness is Your Proprietary IP</span>
+                </h3>
+                <p class="text-slate-300 text-base leading-relaxed">
+                    Base models will rotate, change, and improve every quarter. Tying your enterprise strategy to model loyalty is a strategic dead-end. True competitive advantage belongs to the <strong>harness architecture</strong> you build, maintain, and optimize[cite: 4].
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-6 pt-6 border-t border-slate-800">
+                <div class="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                    <div class="text-brand-400 font-bold text-base">01 / Models Rotate</div>
+                    <p class="text-xs text-slate-300">Interchangeable commodities. Upgrading a model takes minutes; engineering a robust execution runtime takes rigorous software architecture.</p>
+                </div>
+                <div class="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                    <div class="text-brand-400 font-bold text-base">02 / Moat is Architecture</div>
+                    <p class="text-xs text-slate-300">Your company’s real competitive edge isn't the model API you call—it’s your custom memory paging rules, sandboxes, and verification loops.</p>
+                </div>
+                <div class="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                    <div class="text-brand-400 font-bold text-base">03 / The Final Rule</div>
+                    <p class="text-xs text-slate-300">A mediocre model with a great harness beats a frontier model with a bad harness every single time.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="border-t border-slate-800 mt-16 py-8 text-center text-xs text-slate-400">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>Harness Engineering Executive Briefing • Single-Page Application Infographic</p>
+            <p class="mt-1 text-slate-400">Engineered for enterprise technology strategy & executive alignment[cite: 4].</p>
+        </div>
+    </footer>
+
+    <script>
+        function wrapLabel(str, maxLen = 16) {
+            if (typeof str !== 'string') return str;
+            if (str.length <= maxLen) return str;
+            const words = str.split(' ');
+            const lines = [];
+            let currentLine = '';
+            words.forEach(word => {
+                if ((currentLine + ' ' + word).trim().length > maxLen) {
+                    if (currentLine) lines.push(currentLine.trim());
+                    currentLine = word;
+                } else {
+                    currentLine = (currentLine + ' ' + word).trim();
+                }
+            });
+            if (currentLine) lines.push(currentLine.trim());
+            return lines;
+        }
+
+        const commonTooltipConfig = {
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        title: function(tooltipItems) {
+                            const item = tooltipItems[0];
+                            let label = item.chart.data.labels[item.dataIndex];
+                            return Array.isArray(label) ? label.join(' ') : label;
+                        }
+                    }
+                }
+            }
+        };
+
+        const ctxFailure = document.getElementById('failureChart').getContext('2d');
+        const failureChart = new Chart(ctxFailure, {
+            type: 'line',
+            data: {
+                labels: ['1 Step', '5 Steps', '10 Steps', '20 Steps', '30 Steps'],
+                datasets: [
+                    {
+                        label: wrapLabel('Raw Model (p=0.95)'),
+                        data: [95.0, 77.4, 59.8, 35.8, 21.5],
+                        borderColor: '#f43f5e',
+                        backgroundColor: 'rgba(244, 63, 94, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: wrapLabel('Frontier Model (p=0.98)'),
+                        data: [98.0, 90.4, 81.7, 66.8, 54.5],
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: wrapLabel('Harness + Gated Verification'),
+                        data: [100.0, 99.5, 99.0, 98.0, 97.0],
+                        borderColor: '#06b6d4',
+                        backgroundColor: 'rgba(6, 182, 212, 0.2)',
+                        borderWidth: 3,
+                        tension: 0.1,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Cumulative Success Probability (%)',
+                            color: '#94a3b8'
+                        },
+                        grid: { color: 'rgba(51, 65, 85, 0.4)' },
+                        ticks: { color: '#94a3b8' }
+                    },
+                    x: {
+                        grid: { color: 'rgba(51, 65, 85, 0.4)' },
+                        ticks: { color: '#94a3b8' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: { color: '#e2e8f0', font: { size: 11 } }
+                    },
+                    tooltip: commonTooltipConfig.plugins.tooltip
+                }
+            }
+        });
+
+        const stepsInput = document.getElementById('stepsInput');
+        const accInput = document.getElementById('accInput');
+        const stepsVal = document.getElementById('stepsVal');
+        const accVal = document.getElementById('accVal');
+        const unassistedRes = document.getElementById('unassistedRes');
+        const harnessRes = document.getElementById('harnessRes');
+        const diffRes = document.getElementById('diffRes');
+
+        function updateSimulator() {
+            const N = parseInt(stepsInput.value);
+            const p = parseFloat(accInput.value) / 100.0;
+
+            stepsVal.innerText = N + (N === 1 ? ' Step' : ' Steps');
+            accVal.innerText = (p * 100).toFixed(1) + '%';
+
+            const unassisted = Math.pow(p, N) * 100.0;
+            const harness = Math.max(95.0, 100.0 - (N * 0.1));
+            const diff = harness - unassisted;
+
+            unassistedRes.innerText = unassisted.toFixed(1) + '%';
+            harnessRes.innerText = harness.toFixed(1) + '%';
+            diffRes.innerText = '+' + diff.toFixed(1) + '%';
+        }
+
+        stepsInput.addEventListener('input', updateSimulator);
+        accInput.addEventListener('input', updateSimulator);
+        updateSimulator();
+
+        const ctxToken = document.getElementById('tokenChart').getContext('2d');
+        const tokenChart = new Chart(ctxToken, {
+            type: 'bar',
+            data: {
+                labels: [
+                    wrapLabel('Naive Transcript History'),
+                    wrapLabel('Virtual Memory Paging')
+                ],
+                datasets: [
+                    {
+                        label: wrapLabel('Token Consumption Index'),
+                        data: [100, 22.5],
+                        backgroundColor: ['#f43f5e', '#10b981'],
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 120,
+                        title: {
+                            display: true,
+                            text: 'Relative Context Overhead (%)',
+                            color: '#94a3b8'
+                        },
+                        grid: { color: 'rgba(51, 65, 85, 0.4)' },
+                        ticks: { color: '#94a3b8' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#94a3b8' }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: commonTooltipConfig.plugins.tooltip
+                }
+            }
+        });
+    </script>
+</body>
+</html>
