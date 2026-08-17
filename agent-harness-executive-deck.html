@@ -1,0 +1,2291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Harness Architecture — Executive Presentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+  <!-- Pinned CDN versions (avoid @latest breakage on presentation day) -->
+  <script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root {
+      --bg-color: #040812;
+      --card-bg: rgba(11, 20, 38, 0.85);
+      --card-border: rgba(45, 74, 110, 0.6);
+      --brand-cyan: #06b6d4;
+      --brand-cyan-light: #22d3ee;
+      --brand-cyan-glow: rgba(6, 182, 212, 0.4);
+      --accent-orange: #f97316;
+      --accent-orange-light: #fb923c;
+      --accent-orange-glow: rgba(249, 115, 22, 0.45);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-emerald: #10b981;
+      --accent-rose: #f43f5e;
+      --accent-blue: #38bdf8;
+      --accent-amber: #f59e0b;
+      --accent-violet: #a855f7;
+      --orbit-unit: min(1.2vw, 1.4vh, 14px);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* Technical blueprint grid background */
+    body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(6, 182, 212, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(6, 182, 212, 0.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .glow-sphere {
+      position: absolute;
+      width: 50vw;
+      height: 50vw;
+      max-width: 900px;
+      max-height: 900px;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.12) 0%, rgba(249, 115, 22, 0.04) 50%, rgba(0,0,0,0) 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Deck layout */
+    .deck-container {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+      padding: 2vh 2vw;
+    }
+
+    .slide {
+      position: absolute;
+      width: 96vw;
+      max-width: 1700px;
+      height: 90vh;
+      max-height: 1100px;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.97) translateY(20px);
+      transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: clamp(16px, 2.5vh, 40px);
+    }
+
+    .slide.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1) translateY(0);
+    }
+
+    .block-tag {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(0.75rem, 1vw, 0.95rem);
+      font-weight: 700;
+      color: var(--brand-cyan-light);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 0.8vh;
+    }
+
+    .block-tag span.square {
+      width: 10px;
+      height: 10px;
+      background: var(--brand-cyan);
+      display: inline-block;
+      border-radius: 2px;
+    }
+
+    h2 {
+      font-size: clamp(1.8rem, 2.8vw, 3.4rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.5vh;
+      position: relative;
+      display: inline-block;
+    }
+
+    h2::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: -6px;
+      width: 100%;
+      max-width: 120px;
+      height: 4px;
+      background: var(--brand-cyan);
+      border-radius: 2px;
+    }
+
+    .brand-text { color: var(--brand-cyan-light); }
+    .orange-text { color: var(--accent-orange-light); }
+
+    .pill {
+      background: rgba(6, 182, 212, 0.1);
+      border: 1px solid rgba(6, 182, 212, 0.35);
+      padding: clamp(8px, 1vh, 14px) clamp(16px, 1.5vw, 28px);
+      border-radius: 12px;
+      font-size: clamp(0.9rem, 1.1vw, 1.2rem);
+      color: var(--brand-cyan-light);
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(16px, 2vw, 32px);
+      margin-top: 2vh;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: clamp(18px, 2vh, 32px);
+      backdrop-filter: blur(12px);
+      transition: border-color 0.2s;
+    }
+
+    .card:hover { border-color: var(--brand-cyan); }
+
+    .card-title {
+      font-size: clamp(1.05rem, 1.3vw, 1.5rem);
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-desc {
+      font-size: clamp(0.9rem, 1vw, 1.15rem);
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .source-note {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(0.68rem, 0.8vw, 0.9rem);
+      color: #64748b;
+    }
+
+    /* SLIDE 1: blueprint frame */
+    .blueprint-frame {
+      border: 1.5px solid rgba(71, 85, 105, 0.7);
+      background: #0f172a;
+      border-radius: 14px;
+      padding: clamp(20px, 3vh, 40px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: clamp(16px, 2.5vh, 28px);
+      position: relative;
+      box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.8), 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .blueprint-frame::before {
+      content: '\250C';
+      position: absolute; top: 6px; left: 10px;
+      color: #64748b; font-family: 'JetBrains Mono', monospace; font-size: 1.2rem;
+    }
+
+    .blueprint-frame::after {
+      content: '\2510';
+      position: absolute; top: 6px; right: 10px;
+      color: #64748b; font-family: 'JetBrains Mono', monospace; font-size: 1.2rem;
+    }
+
+    .top-statement-banner {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(0.85rem, 1.2vw, 1.35rem);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: #e2e8f0;
+      text-transform: uppercase;
+    }
+
+    .blueprint-formula-hero {
+      font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace;
+      font-size: clamp(2.8rem, 5.2vw, 6.2rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+      display: flex;
+      align-items: center;
+      gap: clamp(8px, 1.4vw, 22px);
+      color: #cbd5e1;
+    }
+
+    .blueprint-formula-hero .hero-agent { color: #ffffff; }
+    .blueprint-formula-hero .hero-model { color: #f59e0b; }
+    .blueprint-formula-hero .hero-harness { color: #f97316; }
+
+    .blueprint-grid-visual {
+      display: grid;
+      grid-template-columns: 1fr 1.3fr;
+      gap: clamp(20px, 3vw, 50px);
+      align-items: stretch;
+      background: #090e17;
+      border: 1px solid #1e293b;
+      border-radius: 10px;
+      padding: clamp(14px, 2vh, 24px);
+    }
+
+    .bench-stage-box {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: clamp(8px, 1.2vh, 14px);
+    }
+
+    .bench-stage-box.stage-lift {
+      border-color: rgba(245, 158, 11, 0.4);
+      background: rgba(245, 158, 11, 0.04);
+    }
+
+    .bench-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .chip-comparison-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .chip-container {
+      flex: 1;
+      height: clamp(80px, 12vh, 130px);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chip-baseline { border: 1px solid #334155; background: #151e2e; }
+
+    .chip-custom {
+      border: 2px solid #f59e0b;
+      background: #181d28;
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.35);
+    }
+
+    .badge-rank-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(0.72rem, 0.85vw, 1rem);
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    .badge-rank-left { background: #1e293b; border: 1px solid #475569; color: #94a3b8; }
+
+    .badge-rank-right {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1.5px solid #f59e0b;
+      color: #fbbf24;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.3);
+    }
+
+    .blueprint-footer-quote {
+      border-top: 1px solid #1e293b;
+      padding-top: clamp(10px, 1.5vh, 18px);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(0.8rem, 0.95vw, 1.15rem);
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+
+    /* Agenda */
+    .agenda-list { display: flex; flex-direction: column; gap: clamp(16px, 2.4vh, 28px); margin-top: 2vh; }
+
+    .agenda-item {
+      display: flex; align-items: center; gap: 16px;
+      font-size: clamp(1.1rem, 1.4vw, 1.6rem);
+    }
+
+    .agenda-num {
+      width: 38px; height: 38px; flex: 0 0 38px;
+      border-radius: 10px;
+      background: rgba(6,182,212,0.15);
+      border: 1.5px solid var(--brand-cyan);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      color: var(--brand-cyan-light);
+    }
+
+    /* Loop cycle diagram */
+    .cycle-diagram {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      width: clamp(420px, 42vw, 640px);
+      height: clamp(170px, 24vh, 280px);
+      margin: 1vh auto;
+    }
+
+    .cycle-node {
+      position: absolute;
+      background: #090e1a;
+      border: 2px solid var(--brand-cyan);
+      border-radius: 14px;
+      padding: clamp(8px, 1.2vh, 16px) clamp(18px, 2.2vw, 36px);
+      font-weight: 700;
+      font-size: clamp(0.95rem, 1.15vw, 1.25rem);
+      letter-spacing: 0.05em;
+      box-shadow: 0 0 24px rgba(6, 182, 212, 0.25);
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    /* Simulator slide */
+    .slide-sim-container { display: flex; flex-direction: column; gap: 1.5vh; margin-top: 0.5vh; }
+
+    .slide-sim-grid {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: clamp(16px, 2vw, 32px);
+      align-items: stretch;
+    }
+
+    .panel-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 2vh 2vw;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1.2vh;
+    }
+
+    .panel-heading {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--brand-cyan-light);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .canvas-box { position: relative; height: clamp(180px, 26vh, 320px); width: 100%; }
+
+    .control-row { display: flex; flex-direction: column; gap: 6px; }
+
+    .control-labels {
+      display: flex; justify-content: space-between;
+      font-size: clamp(0.8rem, 1vw, 1.1rem);
+      color: var(--text-muted);
+    }
+
+    .control-labels span.val { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+
+    input[type=range] {
+      width: 100%;
+      accent-color: var(--brand-cyan);
+      background: #1e293b;
+      height: 8px;
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .results-box {
+      background: rgba(2, 6, 23, 0.85);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 1.5vh 1.5vw;
+      display: flex; flex-direction: column; gap: 8px;
+      font-size: clamp(0.85rem, 1vw, 1.15rem);
+    }
+
+    .results-row { display: flex; justify-content: space-between; align-items: center; }
+    .results-row span.num { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+
+    .lusser-strip {
+      background: rgba(6, 182, 212, 0.08);
+      border-left: 4px solid var(--brand-cyan);
+      border-radius: 10px;
+      padding: 1.2vh 2vw;
+      font-size: clamp(0.88rem, 1.05vw, 1.2rem);
+      line-height: 1.6;
+      color: #e2e8f0;
+    }
+
+    /* Compare table */
+    .compare-table-container {
+      background: #090e17;
+      border: 1px solid rgba(45, 74, 110, 0.8);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-top: 1.5vh;
+    }
+
+    .compare-table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; }
+
+    .compare-table th {
+      background: rgba(15, 23, 42, 0.95);
+      padding: clamp(10px, 1.4vh, 18px) clamp(14px, 1.5vw, 24px);
+      text-align: left;
+      font-size: clamp(0.85rem, 1.05vw, 1.2rem);
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      border-bottom: 1.5px solid rgba(45, 74, 110, 0.8);
+    }
+
+    .compare-table td {
+      padding: clamp(10px, 1.3vh, 16px) clamp(14px, 1.5vw, 24px);
+      font-size: clamp(0.8rem, 0.95vw, 1.1rem);
+      border-bottom: 1px solid rgba(30, 41, 59, 0.8);
+      color: #cbd5e1;
+    }
+
+    .compare-table tr:last-child td { border-bottom: none; }
+
+    .compare-row-header {
+      font-weight: 800; color: #fff;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      border-right: 1px solid rgba(45, 74, 110, 0.6);
+      width: 25%;
+    }
+
+    .compare-cell-framework { border-right: 1px solid rgba(45, 74, 110, 0.6); width: 37.5%; }
+
+    .compare-cell-harness { width: 37.5%; color: #ecfeff !important; background: rgba(6, 182, 212, 0.03); }
+
+    .cell-flex { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+
+    .table-callout-glow {
+      border: 1.5px solid var(--accent-orange);
+      background: rgba(249, 115, 22, 0.08);
+      border-radius: 12px;
+      padding: clamp(12px, 1.6vh, 20px) clamp(16px, 2vw, 30px);
+      margin-top: 2vh;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(0.85rem, 1.05vw, 1.25rem);
+      color: #fed7aa;
+      box-shadow: 0 0 20px var(--accent-orange-glow);
+      text-align: center;
+    }
+
+    /* Timeline */
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: clamp(16px, 2vw, 32px);
+      position: relative;
+      margin-top: 4vh;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      top: 23px; left: 40px; right: 40px;
+      height: 2px;
+      background: rgba(6, 182, 212, 0.3);
+      z-index: 0;
+    }
+
+    .timeline-node { position: relative; z-index: 1; }
+
+    .timeline-badge {
+      width: clamp(40px, 4vw, 54px);
+      height: clamp(40px, 4vw, 54px);
+      border-radius: 50%;
+      background: #090e1a;
+      border: 2px solid var(--brand-cyan);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700;
+      font-size: clamp(1rem, 1.2vw, 1.3rem);
+      margin-bottom: 1.5vh;
+      color: var(--brand-cyan-light);
+      box-shadow: 0 0 18px var(--brand-cyan-glow);
+    }
+
+    .timeline-title { font-weight: 700; font-size: clamp(1rem, 1.2vw, 1.35rem); margin-bottom: 6px; }
+
+    /* Staircase (8 levels) */
+    .staircase-wrapper {
+      display: flex; justify-content: flex-end; align-items: flex-end;
+      height: clamp(200px, 32vh, 360px);
+      margin: 2vh 0 3vh 0;
+      padding: 0 4vw;
+    }
+
+    .staircase {
+      display: flex; align-items: flex-end;
+      gap: clamp(8px, 1.2vw, 18px);
+      height: 100%; width: 100%;
+      max-width: 900px;
+      margin-left: auto;
+    }
+
+    .stair-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; }
+
+    .stair-bar {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid rgba(51, 65, 85, 0.6);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(0.85rem, 1.1vw, 1.2rem);
+      font-weight: 700;
+      color: var(--text-muted);
+      position: relative;
+    }
+
+    .stair-bar span.num-label { position: absolute; bottom: 8px; }
+
+    .stair-bar.bar-highlight {
+      background: var(--brand-cyan);
+      border: 2px solid var(--brand-cyan-light);
+      box-shadow: 0 0 35px rgba(6, 182, 212, 0.55);
+      color: #020617;
+    }
+
+    .stair-bar.bar-highlight .vertical-text {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800;
+      font-size: clamp(0.95rem, 1.2vw, 1.4rem);
+      letter-spacing: 0.08em;
+      margin-bottom: 25px;
+    }
+
+    .levels-legend-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.8vh 2.5vw;
+      font-size: clamp(0.9rem, 1.1vw, 1.3rem);
+    }
+
+    .level-item { display: flex; align-items: center; gap: 10px; color: #cbd5e1; }
+
+    .level-item strong.num {
+      color: var(--brand-cyan-light);
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+    }
+
+    .level-item.active-level { color: #fff; font-weight: 700; }
+
+    .level-item.active-level .harness-badge-pill {
+      background: var(--brand-cyan);
+      color: #020617;
+      padding: 4px 12px;
+      border-radius: 8px;
+      font-weight: 800;
+      box-shadow: 0 0 16px rgba(6, 182, 212, 0.45);
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+
+    /* Thickness bars */
+    .thickness-bars-container { display: flex; flex-direction: column; gap: 2.2vh; margin: 2vh 0; }
+
+    .thickness-row { display: flex; align-items: center; gap: 1.8vw; }
+
+    .thickness-label {
+      width: clamp(80px, 9vw, 120px);
+      font-size: clamp(1.1rem, 1.35vw, 1.5rem);
+      font-weight: 800;
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.05em;
+    }
+
+    .thickness-bar-outer {
+      flex: 1;
+      height: clamp(48px, 6.5vh, 72px);
+      background: #0f172a;
+      border-radius: 12px;
+      display: flex;
+      overflow: hidden;
+      border: 1px solid rgba(45, 74, 110, 0.7);
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+    }
+
+    .bar-segment-model {
+      background: linear-gradient(90deg, #0284c7, #38bdf8);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700;
+      font-size: clamp(0.85rem, 1.05vw, 1.2rem);
+      color: #040812;
+      letter-spacing: 0.02em;
+    }
+
+    .bar-segment-harness {
+      background: linear-gradient(90deg, #06b6d4, #22d3ee);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800;
+      font-size: clamp(0.85rem, 1.05vw, 1.2rem);
+      color: #020617;
+      letter-spacing: 0.02em;
+    }
+
+    .meta-callout-banner {
+      background: rgba(6, 182, 212, 0.12);
+      border: 1px solid var(--brand-cyan);
+      border-radius: 14px;
+      padding: 1.5vh 2vw;
+      text-align: center;
+      font-size: clamp(1rem, 1.3vw, 1.5rem);
+      font-weight: 700;
+      color: #fff;
+      margin-top: 1.5vh;
+    }
+
+    /* Software factory */
+    .factory-top-banner {
+      display: flex; align-items: center;
+      background: #0f172a;
+      border: 1px solid rgba(6, 182, 212, 0.35);
+      border-radius: 14px;
+      overflow: hidden;
+      height: clamp(48px, 6vh, 68px);
+      margin-bottom: 1.5vh;
+    }
+
+    .factory-model-tag {
+      background: var(--accent-blue);
+      color: #040812;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 0 2vw;
+      height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: clamp(0.85rem, 1.1vw, 1.2rem);
+      letter-spacing: 0.05em;
+    }
+
+    .factory-harness-tag {
+      background: linear-gradient(90deg, rgba(6, 182, 212, 0.25) 0%, rgba(99, 102, 241, 0.15) 100%);
+      flex: 1;
+      height: 100%;
+      display: flex; align-items: center;
+      padding: 0 2vw;
+      gap: 1vw;
+      font-size: clamp(0.85rem, 1.05vw, 1.2rem);
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+
+    .pipeline-container {
+      position: relative;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: clamp(18px, 2.5vh, 32px) clamp(16px, 2.5vw, 36px);
+      margin-bottom: 1.5vh;
+    }
+
+    .pipeline-nodes { display: flex; align-items: flex-start; justify-content: space-between; position: relative; z-index: 2; }
+
+    .pipeline-node {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 8px; text-align: center;
+      flex: 0 0 clamp(90px, 11vw, 150px);
+    }
+
+    .node-icon-circle {
+      width: clamp(48px, 4.8vw, 68px);
+      height: clamp(48px, 4.8vw, 68px);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid var(--brand-cyan);
+      background: #090e1a;
+      box-shadow: 0 0 16px rgba(6, 182, 212, 0.3);
+      color: #fff;
+      z-index: 2;
+    }
+
+    .node-title { font-size: clamp(0.95rem, 1.15vw, 1.35rem); font-weight: 700; color: #fff; }
+
+    .node-sub {
+      font-size: clamp(0.72rem, 0.85vw, 0.95rem);
+      color: var(--text-muted);
+      max-width: 140px;
+      line-height: 1.35;
+    }
+
+    .pipeline-arrow {
+      flex: 1;
+      height: 2px;
+      background: linear-gradient(90deg, rgba(6, 182, 212, 0.3), rgba(6, 182, 212, 0.9), rgba(6, 182, 212, 0.3));
+      margin: clamp(24px, 2.4vw, 34px) -12px 0 -12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .pipeline-arrow::after {
+      content: '';
+      position: absolute;
+      right: 0; top: -4px;
+      width: 0; height: 0;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-left: 8px solid var(--brand-cyan-light);
+    }
+
+    .replan-loop-banner {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px;
+      margin-top: 1.8vh;
+      padding: 0.9vh 1.5vw;
+      border-radius: 10px;
+      background: rgba(244, 63, 94, 0.1);
+      border: 1px dashed var(--accent-rose);
+      color: #fca5a5;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(0.82rem, 0.95vw, 1.1rem);
+      font-weight: 700;
+      animation: pulseBorder 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseBorder {
+      0%, 100% { border-color: rgba(244, 63, 94, 0.4); box-shadow: 0 0 0px transparent; }
+      50% { border-color: rgba(244, 63, 94, 0.9); box-shadow: 0 0 14px rgba(244, 63, 94, 0.3); }
+    }
+
+    .factory-proof-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 2vw;
+      align-items: stretch;
+    }
+
+    .proof-score-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: clamp(16px, 2vh, 28px);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .proof-numbers {
+      display: flex; align-items: center;
+      gap: 1vw;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(1.8rem, 2.4vw, 3rem);
+      font-weight: 800;
+    }
+
+    /* Solar system anatomy */
+    .solar-system-grid {
+      display: grid;
+      grid-template-columns: 1.45fr 1fr;
+      gap: clamp(18px, 2.2vw, 36px);
+      align-items: center;
+      height: 100%;
+    }
+
+    .universe-viewport {
+      position: relative;
+      width: 100%;
+      height: clamp(380px, 56vh, 680px);
+      display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(circle at center, #0e1726 0%, #020617 65%, #010409 100%);
+      border-radius: 24px;
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      overflow: hidden;
+      box-shadow: inset 0 0 60px rgba(0,0,0,0.8), 0 0 30px rgba(6, 182, 212, 0.15);
+    }
+
+    .sun-core {
+      position: absolute;
+      width: calc(var(--orbit-unit) * 5.5);
+      height: calc(var(--orbit-unit) * 5.5);
+      border-radius: 50%;
+      background: radial-gradient(circle, #cffafe 0%, #06b6d4 35%, #0891b2 70%, #164e63 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: #020617;
+      font-weight: 800;
+      font-size: clamp(0.85rem, 1.1vw, 1.3rem);
+      letter-spacing: 0.06em;
+      box-shadow: 0 0 45px rgba(6, 182, 212, 0.95), 0 0 90px rgba(8, 145, 178, 0.55), inset 0 0 15px #fff;
+      z-index: 10;
+      cursor: pointer;
+      animation: pulseSun 3s ease-in-out infinite alternate;
+      border: none;
+      font-family: inherit;
+    }
+
+    @keyframes pulseSun {
+      0% { transform: scale(0.96); box-shadow: 0 0 35px rgba(6, 182, 212, 0.8); }
+      100% { transform: scale(1.05); box-shadow: 0 0 60px rgba(6, 182, 212, 1), 0 0 110px rgba(8, 145, 178, 0.6); }
+    }
+
+    .orbit-track {
+      position: absolute;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+
+    .orbit-framework {
+      width: calc(var(--orbit-unit) * 16.5);
+      height: calc(var(--orbit-unit) * 16.5);
+      border: 1.5px dashed rgba(6, 182, 212, 0.65);
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.2) 0%, rgba(6, 182, 212, 0.05) 100%);
+      box-shadow: inset 0 0 35px rgba(6, 182, 212, 0.2), 0 0 20px rgba(6, 182, 212, 0.15);
+      animation: rotateOrbit 26s linear infinite;
+      z-index: 3;
+    }
+
+    .orbit-dev {
+      width: calc(var(--orbit-unit) * 25);
+      height: calc(var(--orbit-unit) * 25);
+      border: 1.5px dashed rgba(59, 130, 246, 0.55);
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, rgba(15, 23, 42, 0.08) 100%);
+      box-shadow: inset 0 0 45px rgba(59, 130, 246, 0.15), 0 0 25px rgba(59, 130, 246, 0.1);
+      animation: rotateOrbit 44s linear infinite reverse;
+      z-index: 2;
+    }
+
+    .orbit-cloud {
+      width: calc(var(--orbit-unit) * 33.5);
+      height: calc(var(--orbit-unit) * 33.5);
+      border: 1.5px dashed rgba(16, 185, 129, 0.35);
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, rgba(2, 6, 23, 0.04) 100%);
+      box-shadow: inset 0 0 60px rgba(16, 185, 129, 0.12);
+      animation: rotateOrbit 70s linear infinite;
+      z-index: 1;
+    }
+
+    @keyframes rotateOrbit {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /*
+      BUGFIX: positioning transform and counter-rotation animation used to live on the
+      SAME element, so the keyframe transform wiped out translateX/Y(-50%). Positioning
+      now sits on .planet-pos (outer), while the counter-rotation animates .planet (inner).
+    */
+    .planet-pos { position: absolute; }
+
+    .p-n { top: -14px; left: 50%; transform: translateX(-50%); }
+    .p-s { bottom: -14px; left: 50%; transform: translateX(-50%); }
+    .p-w { left: -14px; top: 50%; transform: translateY(-50%); }
+    .p-e { right: -14px; top: 50%; transform: translateY(-50%); }
+
+    .planet {
+      pointer-events: auto;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      background: none;
+      border: none;
+      padding: 0;
+      font-family: inherit;
+    }
+
+    .orbit-framework .planet { animation: counterRotate 26s linear infinite; }
+    .orbit-dev .planet { animation: counterRotateReverse 44s linear infinite; }
+    .orbit-cloud .planet { animation: counterRotate 70s linear infinite; }
+
+    @keyframes counterRotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(-360deg); }
+    }
+
+    @keyframes counterRotateReverse {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .planet-badge {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1.5px solid var(--brand-cyan);
+      padding: clamp(4px, 0.6vh, 8px) clamp(8px, 0.9vw, 14px);
+      border-radius: 20px;
+      font-size: clamp(0.7rem, 0.85vw, 0.98rem);
+      font-weight: 700;
+      color: #fff;
+      display: flex; align-items: center; gap: 6px;
+      white-space: nowrap;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.8), 0 0 10px var(--brand-cyan-glow);
+      transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .planet:hover .planet-badge,
+    .planet:focus-visible .planet-badge,
+    .planet.active-planet .planet-badge {
+      border-color: #fff;
+      background: var(--brand-cyan);
+      color: #020617;
+      box-shadow: 0 0 25px var(--brand-cyan-light);
+      transform: scale(1.1);
+    }
+
+    .solar-inspector {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: clamp(16px, 2vh, 32px);
+      display: flex; flex-direction: column; gap: 1.5vh;
+    }
+
+    .solar-control-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-bottom: 1vh;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .orbit-btn {
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: clamp(0.75rem, 0.9vw, 1rem);
+      cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      transition: background 0.2s, color 0.2s;
+      font-family: inherit;
+    }
+
+    .orbit-btn:hover { background: var(--brand-cyan); color: #020617; }
+
+    .solar-card-detail {
+      background: rgba(2, 6, 23, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: clamp(12px, 1.5vh, 20px);
+      display: flex; flex-direction: column; gap: 8px;
+      transition: border-color 0.2s;
+      min-height: 120px;
+    }
+
+    .solar-tier-title {
+      font-size: clamp(0.95rem, 1.2vw, 1.35rem);
+      font-weight: 700;
+      display: flex; align-items: center; gap: 8px;
+      color: #fff;
+    }
+
+    .solar-tier-desc {
+      font-size: clamp(0.85rem, 1vw, 1.15rem);
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    .tier-legend { display: flex; flex-direction: column; gap: 1vh; font-size: clamp(0.8rem, 0.95vw, 1.1rem); }
+
+    .tier-legend-row { display: flex; align-items: center; gap: 10px; }
+
+    .tier-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      display: inline-block; flex: 0 0 12px;
+    }
+
+    /* Core components (bridges) */
+    .bridges-container-layout {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: clamp(20px, 2.5vw, 40px);
+      align-items: center;
+      height: 100%;
+    }
+
+    .bridges-stack { display: flex; flex-direction: column; gap: clamp(6px, 1vh, 12px); }
+
+    .bridge-item {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(51, 65, 85, 0.6);
+      border-radius: 12px;
+      padding: clamp(6px, 1vh, 12px) clamp(12px, 1.3vw, 20px);
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 14px;
+      cursor: pointer;
+      transition: background 0.25s, border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      text-align: left;
+      font-family: inherit;
+      color: inherit;
+    }
+
+    .bridge-item::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      background: var(--brand-cyan);
+      opacity: 0.5;
+      transition: width 0.25s, opacity 0.25s;
+    }
+
+    .bridge-item:hover,
+    .bridge-item:focus-visible,
+    .bridge-item.active-bridge {
+      background: rgba(6, 182, 212, 0.15);
+      border-color: var(--brand-cyan-light);
+      transform: translateX(6px);
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.25);
+    }
+
+    .bridge-item:hover::before,
+    .bridge-item.active-bridge::before {
+      width: 6px;
+      opacity: 1;
+    }
+
+    .bridge-tech-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: clamp(0.78rem, 0.95vw, 1.1rem);
+      color: #fff;
+      display: flex; align-items: center; gap: 10px;
+    }
+
+    .bridge-outcome { text-align: right; }
+
+    .bridge-outcome-title {
+      font-weight: 800;
+      font-size: clamp(0.78rem, 0.95vw, 1.15rem);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .bridge-outcome-sub { font-size: clamp(0.7rem, 0.8vw, 0.9rem); color: var(--text-muted); }
+
+    .bridges-side-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: clamp(20px, 3vh, 36px);
+      display: flex; flex-direction: column; justify-content: space-between;
+      gap: 2vh;
+    }
+
+    .agent-chasm-banner {
+      background: rgba(6, 182, 212, 0.1);
+      border: 1px dashed var(--brand-cyan);
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    /* Trends grid */
+    .trends-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: auto auto;
+      gap: clamp(12px, 1.5vh, 20px);
+      margin-top: 1.5vh;
+    }
+
+    .trend-card {
+      background: #090e17;
+      border: 1px solid rgba(45, 74, 110, 0.8);
+      border-radius: 14px;
+      padding: clamp(12px, 1.6vh, 20px);
+      display: flex; flex-direction: column; gap: 8px;
+      transition: border-color 0.25s, background 0.25s, transform 0.25s, box-shadow 0.25s;
+    }
+
+    .trend-card:hover {
+      border-color: var(--brand-cyan-light);
+      background: rgba(6, 182, 212, 0.06);
+      transform: translateY(-2px);
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
+    }
+
+    .trend-card-header {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(0.85rem, 1vw, 1.15rem);
+      font-weight: 800;
+      color: #fff;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .trend-card-desc {
+      font-size: clamp(0.75rem, 0.86vw, 0.98rem);
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .trend-card-desc strong { color: #e2e8f0; }
+
+    /* Manifesto */
+    .manifesto-container {
+      background: #090e17;
+      border: 1.5px solid rgba(45, 74, 110, 0.8);
+      border-radius: 18px;
+      padding: clamp(24px, 4vh, 60px) clamp(24px, 4vw, 60px);
+      text-align: center;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 3vh;
+      box-shadow: inset 0 0 50px rgba(0,0,0,0.8), 0 0 30px rgba(6, 182, 212, 0.15);
+    }
+
+    .manifesto-top-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(0.9rem, 1.2vw, 1.5rem);
+      font-weight: 700;
+      color: #cbd5e1;
+    }
+
+    .manifesto-hero-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(2.2rem, 4.2vw, 5.2rem);
+      font-weight: 800;
+      color: var(--accent-orange-light);
+      line-height: 1.15;
+      text-shadow: 0 0 35px var(--accent-orange-glow);
+      max-width: 1200px;
+    }
+
+    .manifesto-hero-title .cursor-block {
+      display: inline-block;
+      width: 0.6em;
+      height: 0.9em;
+      background: var(--accent-orange-light);
+      vertical-align: middle;
+      margin-left: 6px;
+      box-shadow: 0 0 15px var(--accent-orange);
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .manifesto-sub-desc {
+      font-size: clamp(1.1rem, 1.5vw, 1.9rem);
+      color: #94a3b8;
+      max-width: 950px;
+      line-height: 1.6;
+    }
+
+    /* Footer controls */
+    .controls {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: clamp(12px, 1.8vh, 24px) clamp(20px, 3vw, 50px);
+      background: rgba(2, 6, 23, 0.85);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(51, 65, 85, 0.6);
+      z-index: 10;
+    }
+
+    .key-hints {
+      font-size: clamp(0.8rem, 1vw, 1.05rem);
+      color: var(--text-muted);
+      display: flex; gap: 18px;
+    }
+
+    .key-hint kbd {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8em;
+      color: #fff;
+    }
+
+    .footer-right { display: flex; align-items: center; gap: 18px; }
+
+    #slide-counter {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(0.85rem, 1vw, 1.1rem);
+      color: var(--text-muted);
+    }
+
+    .nav-btn-group { display: flex; gap: 14px; }
+
+    .nav-btn {
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      display: flex; align-items: center; gap: 6px;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      font-family: inherit;
+    }
+
+    .nav-btn:hover {
+      background: var(--brand-cyan);
+      color: #020617;
+      border-color: var(--brand-cyan);
+    }
+
+    :focus-visible { outline: 2px solid var(--brand-cyan-light); outline-offset: 2px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .orbit-track, .planet, .sun-core, .cursor-block, .replan-loop-banner {
+        animation: none !important;
+      }
+      .slide { transition: opacity 0.2s linear; transform: none; }
+      .slide.active { transform: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="glow-sphere"></div>
+
+  <main class="deck-container">
+
+    <!-- ============ Slide 1: Title / Thesis ============ -->
+    <section class="slide active" id="slide-title">
+      <div class="blueprint-frame">
+        <div class="top-statement-banner">
+          AGENT PERFORMANCE IS <span class="orange-text">DOMINATED</span> BY THE <span class="orange-text">SURROUNDING SCAFFOLDING</span>
+        </div>
+
+        <div class="blueprint-formula-hero">
+          <span class="hero-agent">AGENT</span> = <span class="hero-model">MODEL</span> + <span class="hero-harness">HARNESS</span>
+        </div>
+
+        <div class="blueprint-grid-visual">
+          <div class="bench-stage-box">
+            <div class="bench-label">Terminal-Bench 2.0 &mdash; same model, harness A</div>
+            <div class="chip-comparison-row">
+              <div class="badge-rank-tag badge-rank-left">Outside Top 30</div>
+              <i data-lucide="arrow-right" color="var(--brand-cyan)" width="20" height="20"></i>
+              <div class="chip-container chip-baseline">
+                <div style="font-family:'JetBrains Mono', monospace; font-size:0.8rem; text-align:center; color:var(--text-muted);">
+                  GPT-5.2-Codex<br>
+                  <span style="font-weight:700; color:#fff;">Baseline harness &mdash; 52.8%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bench-stage-box stage-lift">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+              <span class="bench-label" style="color:var(--accent-orange-light);">Same model, harness B (harness-only changes)</span>
+              <div class="badge-rank-tag badge-rank-right">Top 5</div>
+            </div>
+            <div class="chip-container chip-custom">
+              <div style="font-family:'JetBrains Mono', monospace; font-size:0.95rem; text-align:center; color:#fff;">
+                GPT-5.2-Codex<br>
+                <span style="font-weight:800; color:var(--accent-orange-light);">Engineered harness &mdash; 66.5%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="blueprint-footer-quote">
+          <strong>&ldquo;If you&rsquo;re not the model, you&rsquo;re the harness.&rdquo;</strong> &mdash; Vivek Trivedy, LangChain<br>
+          A decent model with a great harness consistently beats a great model with a bad harness.
+          <div class="source-note" style="margin-top:6px;">
+            Source: LangChain &mdash; &ldquo;Improving Deep Agents with Harness Engineering&rdquo; (Terminal-Bench 2.0; prompts &amp; middleware changes only, ranks at time of publishing).
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Slide 2: Agenda ============ -->
+    <section class="slide" id="slide-agenda">
+      <div class="block-tag"><span class="square"></span> Agenda</div>
+      <h2>Executive Roadmap</h2>
+      <div class="agenda-list">
+        <div class="agenda-item">
+          <div class="agenda-num">1</div>
+          <span><strong>What a harness is and how it relates to autonomous agents</strong></span>
+        </div>
+        <div class="agenda-item">
+          <div class="agenda-num">2</div>
+          <span><strong>Origin and evolution of the terminology</strong></span>
+        </div>
+        <div class="agenda-item">
+          <div class="agenda-num">3</div>
+          <span><strong>Anatomy: What is built inside a harness &mdash; and where our research is focused</strong></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Slide 3: Limitations + Loop (merged) ============ -->
+    <section class="slide" id="slide-loop">
+      <div class="block-tag"><span class="square"></span> Block 1 | What is a Harness</div>
+      <h2>A model can only <span class="brand-text">predict text</span>. An agent is a model in a <span class="brand-text">loop</span>.</h2>
+
+      <div class="card-grid-3" style="margin-top: 1vh;">
+        <div class="card" style="padding: clamp(12px, 1.6vh, 22px);">
+          <div class="card-title" style="font-size: clamp(0.95rem, 1.15vw, 1.3rem);">
+            <i data-lucide="file-x" color="#f43f5e" width="20" height="20"></i> Cannot Open Files
+          </div>
+          <p class="card-desc">No execution arms or direct filesystem access on its own.</p>
+        </div>
+        <div class="card" style="padding: clamp(12px, 1.6vh, 22px);">
+          <div class="card-title" style="font-size: clamp(0.95rem, 1.15vw, 1.3rem);">
+            <i data-lucide="terminal-square" color="#f43f5e" width="20" height="20"></i> Cannot Run Shell
+          </div>
+          <p class="card-desc">No runtime context or access to the underlying OS environment.</p>
+        </div>
+        <div class="card" style="padding: clamp(12px, 1.6vh, 22px);">
+          <div class="card-title" style="font-size: clamp(0.95rem, 1.15vw, 1.3rem);">
+            <i data-lucide="rotate-ccw" color="#f43f5e" width="20" height="20"></i> Zero State Memory
+          </div>
+          <p class="card-desc">Stateless by default: every turn starts from a clean baseline.</p>
+        </div>
+      </div>
+
+      <div class="cycle-diagram">
+        <svg width="100%" height="100%" viewBox="0 0 500 240" style="position:absolute; top:0; left:0;" aria-hidden="true">
+          <ellipse cx="250" cy="120" rx="200" ry="80" fill="none" stroke="var(--brand-cyan)" stroke-width="2" stroke-dasharray="6,6"/>
+        </svg>
+        <div class="cycle-node" style="top: 0; left: 50%; transform: translateX(-50%);">
+          <i data-lucide="brain" width="18" height="18"></i> THINK
+        </div>
+        <div class="cycle-node" style="bottom: 15px; right: 20px;">
+          <i data-lucide="play" width="18" height="18"></i> ACT
+        </div>
+        <div class="cycle-node" style="bottom: 15px; left: 20px;">
+          <i data-lucide="eye" width="18" height="18"></i> OBSERVE
+        </div>
+      </div>
+
+      <div style="text-align: center;">
+        <div class="pill">
+          <i data-lucide="stop-circle" width="18" height="18"></i> Exit Conditions: Stop Token | Turn Limit | Goal Reached
+        </div>
+        <p class="card-desc" style="margin-top: 1vh; font-size: clamp(0.9rem, 1vw, 1.15rem);">
+          The harness supplies everything the model lacks &mdash; then runs the classic <strong>ReAct</strong> pattern: evaluate, execute a tool, observe, think again.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ Slide 4: Compounding Failure ============ -->
+    <section class="slide" id="slide-lusser">
+      <div class="block-tag"><span class="square"></span> Block 1 | What is a Harness</div>
+      <h2>Why a Loop? <span class="brand-text">Compounding Failure Prevention</span></h2>
+
+      <div class="slide-sim-container">
+        <div class="slide-sim-grid">
+          <div class="panel-card">
+            <div class="panel-heading">Compounding Error Decay Curve</div>
+            <div class="canvas-box">
+              <canvas id="failureChart"></canvas>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <div class="panel-heading">
+              <span>Interactive Simulator</span>
+              <i data-lucide="sliders-horizontal" width="16" height="16" color="var(--brand-cyan)"></i>
+            </div>
+
+            <div class="control-row">
+              <div class="control-labels">
+                <span>Autonomous Trajectory Steps (N):</span>
+                <span id="stepsVal" class="val" style="color: var(--brand-cyan-light);">20 Steps</span>
+              </div>
+              <input id="stepsInput" type="range" min="1" max="40" value="20" aria-label="Number of trajectory steps">
+            </div>
+
+            <div class="control-row">
+              <div class="control-labels">
+                <span>Single-Step Model Accuracy (p):</span>
+                <span id="accVal" class="val" style="color: var(--accent-blue);">98.0%</span>
+              </div>
+              <input id="accInput" type="range" min="90" max="99" value="98" step="0.5" aria-label="Single-step model accuracy">
+            </div>
+
+            <div class="results-box">
+              <div class="results-row">
+                <span style="color: var(--text-muted);">Unassisted Model:</span>
+                <span id="unassistedRes" class="num" style="color: var(--accent-rose);">66.8%</span>
+              </div>
+              <div class="results-row">
+                <span style="color: var(--text-muted);">Harness + Verification:</span>
+                <span id="harnessRes" class="num" style="color: var(--accent-emerald);">99.2%</span>
+              </div>
+              <div class="results-row" style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 4px; margin-top: 2px;">
+                <span style="font-weight: 600;">Reliability Lift:</span>
+                <span id="diffRes" class="num" style="color: var(--brand-cyan-light);">+32.4%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lusser-strip">
+          <strong>Lusser&rsquo;s Law:</strong> reliability of a sequential chain = the product of its parts &mdash; ten steps at 99% yield only ~90% overall.
+          The harness curve models a <strong>verification gate with one retry per step</strong> (p<sub>step</sub> = 1 &minus; (1 &minus; p)&sup2;), which is why complex tasks need loops, self-checks, and gates &mdash; not just a smarter model.
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Slide 5: Modularity + Metaphors (merged) ============ -->
+    <section class="slide" id="slide-metaphor">
+      <div class="block-tag"><span class="square"></span> Block 1 | What is a Harness</div>
+      <h2>Switch models with <span class="brand-text">one line of config</span> &mdash; the harness remains intact.</h2>
+
+      <div style="display: grid; grid-template-columns: 1fr 1.3fr; gap: clamp(16px, 2.5vw, 36px); margin-top: 1vh;">
+        <div style="display: flex; flex-direction: column; gap: 14px; font-size: clamp(1rem, 1.2vw, 1.35rem); justify-content: center;">
+          <div style="display:flex; align-items:center; gap:12px;"><i data-lucide="check" color="var(--brand-cyan)" width="20" height="20"></i> Manages execution cycle</div>
+          <div style="display:flex; align-items:center; gap:12px;"><i data-lucide="check" color="var(--brand-cyan)" width="20" height="20"></i> Maintains tool registry</div>
+          <div style="display:flex; align-items:center; gap:12px;"><i data-lucide="check" color="var(--brand-cyan)" width="20" height="20"></i> Handles permissions &amp; safety</div>
+          <div style="display:flex; align-items:center; gap:12px;"><i data-lucide="check" color="var(--brand-cyan)" width="20" height="20"></i> Persists session state &amp; history</div>
+          <div style="display:flex; align-items:center; gap:12px;"><i data-lucide="check" color="var(--brand-cyan)" width="20" height="20"></i> Integrates provider APIs</div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div class="card">
+            <div class="card-title"><i data-lucide="car" color="var(--brand-cyan-light)" width="22" height="22"></i> Engine, Chassis &amp; Driver</div>
+            <p class="card-desc">The LLM is the engine. The harness is the chassis, wheels, and controls. The prompt is the driver choosing the route.</p>
+          </div>
+          <div class="card">
+            <div class="card-title"><i data-lucide="cpu" color="var(--brand-cyan-light)" width="22" height="22"></i> CPU, Motherboard &amp; OS</div>
+            <p class="card-desc">The LLM is the CPU. The harness is the motherboard, RAM, and I/O bus. The user prompt is the OS workload.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 2vh; border-left: 4px solid var(--brand-cyan); padding: clamp(16px, 2.2vh, 30px);">
+        <p style="font-size: clamp(1.05rem, 1.35vw, 1.6rem); font-style: italic; color: #fff; line-height: 1.5;">
+          A harness is &ldquo;every piece of code, configuration, and execution logic that isn&rsquo;t the model itself.&rdquo;
+        </p>
+        <p style="color: var(--brand-cyan-light); font-weight: 600; font-size: clamp(0.9rem, 1.05vw, 1.2rem); margin-top: 6px;">
+          &mdash; LangChain, <em>The Anatomy of an Agent Harness</em> (2026)
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ Slide 6: Framework vs Harness ============ -->
+    <section class="slide" id="slide-compare">
+      <div class="block-tag"><span class="square"></span> Block 1 | Runtime vs Components</div>
+      <h2>Frameworks Provide Components, While <span class="brand-text">Harnesses Provide Runtimes</span></h2>
+
+      <div class="compare-table-container">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th style="width: 25%; color: var(--text-muted);">DIMENSION</th>
+              <th style="width: 37.5%; color: var(--text-main); border-right: 1px solid rgba(45, 74, 110, 0.8);">
+                AGENT FRAMEWORK <span style="font-weight:400; color:var(--text-muted); font-size:0.85em;">(e.g., LangChain)</span>
+              </th>
+              <th style="width: 37.5%; color: var(--brand-cyan-light);">
+                AGENT HARNESS <span style="font-weight:400; color:var(--brand-cyan); font-size:0.85em;">(e.g., Claude Code)</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="compare-row-header">Assembly Required</td>
+              <td class="compare-cell-framework"><div class="cell-flex"><span>Composable building blocks</span><i data-lucide="cog" width="18" height="18" color="#94a3b8"></i></div></td>
+              <td class="compare-cell-harness"><div class="cell-flex"><span>Fixed production runtime</span><i data-lucide="box" width="18" height="18" color="var(--brand-cyan-light)"></i></div></td>
+            </tr>
+            <tr>
+              <td class="compare-row-header">Execution Loop</td>
+              <td class="compare-cell-framework"><div class="cell-flex"><span>Developer-wired</span><i data-lucide="user-cog" width="18" height="18" color="#94a3b8"></i></div></td>
+              <td class="compare-cell-harness"><div class="cell-flex"><span>Pre-wired, autonomous</span><i data-lucide="cpu" width="18" height="18" color="var(--brand-cyan-light)"></i></div></td>
+            </tr>
+            <tr>
+              <td class="compare-row-header">Target User</td>
+              <td class="compare-cell-framework"><div class="cell-flex"><span>Built for human engineers</span><i data-lucide="headset" width="18" height="18" color="#94a3b8"></i></div></td>
+              <td class="compare-cell-harness"><div class="cell-flex"><span>Built for the agent to use</span><i data-lucide="bot" width="18" height="18" color="var(--brand-cyan-light)"></i></div></td>
+            </tr>
+            <tr>
+              <td class="compare-row-header">State Management</td>
+              <td class="compare-cell-framework"><div class="cell-flex"><span>Custom external memory</span><i data-lucide="hard-drive" width="18" height="18" color="#94a3b8"></i></div></td>
+              <td class="compare-cell-harness"><div class="cell-flex"><span>Managed virtual memory out-of-the-box</span><i data-lucide="cloud-cog" width="18" height="18" color="var(--brand-cyan-light)"></i></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-callout-glow">
+        A framework requires an engineer to build the agent. A harness is the agent &mdash; you only provide the goal.
+      </div>
+    </section>
+
+    <!-- ============ Slide 7: Terminology Timeline ============ -->
+    <section class="slide" id="slide-timeline">
+      <div class="block-tag"><span class="square"></span> Block 2 | Terminology Origin</div>
+      <h2>The Term Didn&rsquo;t Appear Overnight</h2>
+
+      <div class="timeline">
+        <div class="timeline-node">
+          <div class="timeline-badge">1</div>
+          <div class="timeline-title">Test Harness</div>
+          <p class="card-desc">Classic software testbench framework around code. Decades-old discipline.</p>
+        </div>
+        <div class="timeline-node">
+          <div class="timeline-badge">2</div>
+          <div class="timeline-title">Eval Harness</div>
+          <p class="card-desc"><code>lm-evaluation-harness</code>, OpenAI Evals for running structured benchmarks.</p>
+        </div>
+        <div class="timeline-node">
+          <div class="timeline-badge">3</div>
+          <div class="timeline-title">Agent Harness</div>
+          <p class="card-desc">SWE-bench and frontier system cards establish that scaffolding &ne; model.</p>
+        </div>
+        <div class="timeline-node">
+          <div class="timeline-badge">4</div>
+          <div class="timeline-title">The Standard</div>
+          <p class="card-desc">LangChain&rsquo;s <em>Anatomy of an Agent Harness</em> (2026) formalizes <code>Agent = Model + Harness</code>; OpenAI and Anthropic publish harness-engineering guidance.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Slide 8: 8 Levels ============ -->
+    <section class="slide" id="slide-levels">
+      <div class="block-tag"><span class="square"></span> Block 2 | Terminology Origin</div>
+      <h2>
+        8 Levels of Agent Engineering<br>
+        <span style="font-size: clamp(1.1rem, 1.4vw, 1.6rem); color: var(--text-muted); font-weight: 400;">(a practitioner maturity model &mdash; Bassim Eledath)</span>
+      </h2>
+
+      <div class="staircase-wrapper">
+        <div class="staircase">
+          <div class="stair-col"><div class="stair-bar" style="height: 18%;"><span class="num-label">1</span></div></div>
+          <div class="stair-col"><div class="stair-bar" style="height: 28%;"><span class="num-label">2</span></div></div>
+          <div class="stair-col"><div class="stair-bar" style="height: 40%;"><span class="num-label">3</span></div></div>
+          <div class="stair-col"><div class="stair-bar" style="height: 52%;"><span class="num-label">4</span></div></div>
+          <div class="stair-col"><div class="stair-bar" style="height: 65%;"><span class="num-label">5</span></div></div>
+          <div class="stair-col">
+            <div class="stair-bar bar-highlight" style="height: 80%;">
+              <span class="vertical-text">harness</span>
+              <span class="num-label">6</span>
+            </div>
+          </div>
+          <div class="stair-col"><div class="stair-bar" style="height: 90%;"><span class="num-label">7</span></div></div>
+          <div class="stair-col"><div class="stair-bar" style="height: 100%;"><span class="num-label">8</span></div></div>
+        </div>
+      </div>
+
+      <div class="levels-legend-grid">
+        <div class="level-item"><strong class="num">1</strong> <span>Tab Complete</span></div>
+        <div class="level-item"><strong class="num">2</strong> <span>Agent IDE</span></div>
+        <div class="level-item"><strong class="num">3</strong> <span>Context Engineering</span></div>
+        <div class="level-item"><strong class="num">4</strong> <span>Compounding Engineering</span></div>
+        <div class="level-item"><strong class="num">5</strong> <span>MCP &amp; Skills</span></div>
+        <div class="level-item active-level">
+          <strong class="num">6</strong>
+          <span class="harness-badge-pill">Harness Engineering</span>
+        </div>
+        <div class="level-item"><strong class="num">7</strong> <span>Background Agents</span></div>
+        <div class="level-item"><strong class="num">8</strong> <span>Autonomous Agent Teams</span></div>
+      </div>
+    </section>
+
+    <!-- ============ Slide 9: Full-Stack Anatomy (solar system; anatomy grid folded in) ============ -->
+    <section class="slide" id="slide-anatomy">
+      <div class="block-tag"><span class="square"></span> Block 3 | Anatomy</div>
+      <h2>Under the Hood: <span class="brand-text">Full-Stack Anatomy of a Harness</span></h2>
+
+      <div class="solar-system-grid">
+        <div class="universe-viewport" id="universeStage">
+          <button class="sun-core" id="sunCore" type="button" aria-label="Inspect the LLM core">
+            <span>LLM</span>
+          </button>
+          <div class="orbit-track orbit-framework" id="orbit1"></div>
+          <div class="orbit-track orbit-dev" id="orbit2"></div>
+          <div class="orbit-track orbit-cloud" id="orbit3"></div>
+        </div>
+
+        <div class="solar-inspector">
+          <div class="solar-control-bar">
+            <span style="font-size: clamp(0.85rem, 1vw, 1.15rem); font-weight: 700; color: var(--brand-cyan-light); text-transform: uppercase;">
+              Orbital Inspector
+            </span>
+            <button class="orbit-btn" id="orbitToggleBtn" type="button">
+              <i data-lucide="pause" width="14" height="14" id="toggleIcon"></i>
+              <span id="toggleText">Pause Orbits</span>
+            </button>
+          </div>
+
+          <div class="solar-card-detail active-tier" id="inspectCard" aria-live="polite">
+            <div class="solar-tier-title" id="inspectTitle">
+              <i data-lucide="orbit" width="20" height="20" color="var(--brand-cyan-light)"></i>
+              <span>Hover or Click Any Component</span>
+            </div>
+            <p class="solar-tier-desc" id="inspectDesc">
+              The model is the reasoning core; the harness is everything that turns that reasoning into reliable work. Click any subsystem to inspect its concrete engineering role.
+            </p>
+          </div>
+
+          <div class="tier-legend">
+            <div class="tier-legend-row">
+              <span class="tier-dot" style="background:var(--brand-cyan); box-shadow:0 0 8px var(--brand-cyan);"></span>
+              <strong style="color:#fff;">Agent Core Layer:</strong>&nbsp;<span style="color:var(--text-muted);">Where intelligence is shaped</span>
+            </div>
+            <div class="tier-legend-row">
+              <span class="tier-dot" style="background:var(--accent-blue); box-shadow:0 0 8px var(--accent-blue);"></span>
+              <strong style="color:#fff;">Developer Interface:</strong>&nbsp;<span style="color:var(--text-muted);">Operational tooling</span>
+            </div>
+            <div class="tier-legend-row">
+              <span class="tier-dot" style="background:var(--accent-emerald); box-shadow:0 0 8px var(--accent-emerald);"></span>
+              <strong style="color:#fff;">Cloud Infrastructure:</strong>&nbsp;<span style="color:var(--text-muted);">Production services</span>
+            </div>
+          </div>
+
+          <div class="source-note" style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 1.2vh;">
+            The model is a hot-swappable part; every subsystem in orbit is the harness.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Slide 10: Thickness Spectrum (the single ratio slide) ============ -->
+    <section class="slide" id="slide-thickness">
+      <div class="block-tag"><span class="square"></span> Block 3 | Topology</div>
+      <h2>Harness Thickness: <span class="brand-text">Thin vs. Thick Architecture</span></h2>
+
+      <div class="thickness-bars-container">
+        <div class="thickness-row">
+          <div class="thickness-label">Thin</div>
+          <div class="thickness-bar-outer">
+            <div class="bar-segment-model" style="width: 80%;">Logic Inside the Model (~80%)</div>
+            <div class="bar-segment-harness" style="width: 20%;">Harness</div>
+          </div>
+        </div>
+
+        <div class="thickness-row">
+          <div class="thickness-label">Thick</div>
+          <div class="thickness-bar-outer">
+            <div class="bar-segment-model" style="width: 38%;">Model</div>
+            <div class="bar-segment-harness" style="width: 62%;">External Logic &amp; Deterministic Scaffolding (Harness)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 1vh; border-left: 4px solid var(--brand-cyan); padding: clamp(16px, 2vh, 28px);">
+        <p style="font-size: clamp(0.95rem, 1.2vw, 1.3rem); color: #e2e8f0; line-height: 1.6;">
+          <i data-lucide="info" width="18" height="18" style="vertical-align: middle; margin-right: 6px; color: var(--brand-cyan);"></i>
+          Where a system sits on this spectrum is a <em>design choice</em>, not a fixed constant: the smarter the frontier model becomes, the thinner the required harness logic. <strong>However, harness thickness never drops to zero.</strong>
+        </p>
+      </div>
+
+      <div class="meta-callout-banner">
+        The Model is a hot-swappable commodity. Everything else around it IS the Harness.
+      </div>
+    </section>
+
+    <!-- ============ Slide 11: Software Factory + Proof ============ -->
+    <section class="slide" id="slide-factory">
+      <div class="block-tag"><span class="square"></span> Block 3 | The AI Layer</div>
+      <h2>The Software Factory: <span class="brand-text">From Spec to Verified Ship</span></h2>
+
+      <div class="factory-top-banner">
+        <div class="factory-model-tag">MODEL</div>
+        <div class="factory-harness-tag">
+          <span style="color: var(--brand-cyan-light); font-weight: 800;">HARNESS (The AI Layer):</span>
+          <span>instructions &bull; tools &bull; context &bull; guardrails &bull; orchestration &bull; observability</span>
+        </div>
+      </div>
+
+      <div class="pipeline-container">
+        <div class="pipeline-nodes">
+          <div class="pipeline-node">
+            <div class="node-icon-circle" style="border-color: #f59e0b;"><i data-lucide="user" color="#f59e0b" width="24" height="24"></i></div>
+            <div class="node-title">You</div>
+            <div class="node-sub">specs + guardrails</div>
+          </div>
+          <div class="pipeline-arrow"></div>
+
+          <div class="pipeline-node">
+            <div class="node-icon-circle" style="border-color: #06b6d4;"><i data-lucide="brain-circuit" color="#06b6d4" width="24" height="24"></i></div>
+            <div class="node-title">Plan</div>
+            <div class="node-sub">decompose goal</div>
+          </div>
+          <div class="pipeline-arrow"></div>
+
+          <div class="pipeline-node">
+            <div class="node-icon-circle" style="border-color: #3b82f6;"><i data-lucide="code-2" color="#3b82f6" width="24" height="24"></i></div>
+            <div class="node-title">Build</div>
+            <div class="node-sub">produce code &amp; edits</div>
+          </div>
+          <div class="pipeline-arrow"></div>
+
+          <div class="pipeline-node">
+            <div class="node-icon-circle" style="border-color: #22d3ee;"><i data-lucide="flask-conical" color="#22d3ee" width="24" height="24"></i></div>
+            <div class="node-title">Verify</div>
+            <div class="node-sub">tests + evals pass</div>
+          </div>
+          <div class="pipeline-arrow"></div>
+
+          <div class="pipeline-node">
+            <div class="node-icon-circle" style="border-color: #10b981;"><i data-lucide="rocket" color="#10b981" width="24" height="24"></i></div>
+            <div class="node-title">Ship</div>
+            <div class="node-sub">verified outcome</div>
+          </div>
+        </div>
+
+        <div class="replan-loop-banner">
+          <i data-lucide="rotate-ccw" width="18" height="18"></i>
+          <span>fail &rarr; re-plan (self-correcting loop from Verify back to Plan)</span>
+        </div>
+      </div>
+
+      <div class="factory-proof-grid">
+        <div class="proof-score-card">
+          <div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; font-weight:700;">Terminal-Bench 2.0 &mdash; GPT-5.2-Codex, harness-only changes</div>
+            <div class="proof-numbers">
+              <span style="color: var(--text-muted);">52.8%</span>
+              <span style="color: var(--brand-cyan-light); font-size:1.4em;">&rarr;</span>
+              <span style="color: var(--accent-emerald);">66.5%</span>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--accent-emerald); font-weight: 700; margin-top: 4px;">
+              +13.7 pts &mdash; outside Top 30 &rarr; Top 5 (at publishing)
+            </div>
+            <div class="source-note" style="margin-top: 4px;">Source: LangChain, &ldquo;Improving Deep Agents with Harness Engineering&rdquo;</div>
+          </div>
+          <i data-lucide="trophy" width="38" height="38" color="var(--brand-cyan)"></i>
+        </div>
+
+        <div class="card" style="padding: clamp(14px, 2vh, 24px); border-left: 4px solid var(--brand-cyan);">
+          <p style="font-size: clamp(0.95rem, 1.15vw, 1.3rem); color: #fff; line-height: 1.5;">
+            <strong>Same model, different rank:</strong> on the public Terminal-Bench 2.0 leaderboard, Opus 4.6 inside Claude Code scores far below the same model running in other harnesses.
+          </p>
+          <p style="color: var(--brand-cyan-light); font-size: 0.85rem; font-weight: 700; margin-top: 4px;">
+            &mdash; LangChain, <em>The Anatomy of an Agent Harness</em> (2026)
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Slide 12: Core Components (research focus) ============ -->
+    <section class="slide" id="slide-components">
+      <div class="block-tag"><span class="square"></span> Block 3 | Core Architecture</div>
+      <h2>Capability and <span class="brand-text">Core Components</span></h2>
+
+      <div class="bridges-container-layout">
+        <div class="bridges-stack" id="bridgesStack"></div>
+
+        <div class="bridges-side-panel">
+          <div class="agent-chasm-banner">
+            <div style="font-size: 0.8rem; font-weight: 800; color: var(--brand-cyan-light); text-transform: uppercase; letter-spacing: 0.1em;">
+              Architectural Scaffolding
+            </div>
+            <div style="font-size: 1.1rem; font-weight: 700; color: #fff; margin-top: 4px;">
+              The Chasm Between Model &amp; Real World
+            </div>
+          </div>
+
+          <div class="card" id="bridgeDetailCard" style="border-left: 4px solid var(--accent-rose); padding: 20px;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: var(--brand-cyan-light); text-transform: uppercase;" id="bridgeBadge"></div>
+            <h3 style="font-size: 1.3rem; font-weight: 800; color: #fff; margin: 6px 0 4px 0;" id="bridgeTitle"></h3>
+            <div style="font-size: 0.85rem; font-weight: 700; color: var(--accent-blue); margin-bottom: 10px;" id="bridgeMech"></div>
+            <p style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.6;" id="bridgeDesc"></p>
+          </div>
+
+          <div style="font-size: 0.9rem; font-style: italic; color: var(--text-muted); text-align: center;">
+            Click or tap any component to inspect how the harness delivers enterprise reliability.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Slide 13: Future Trends ============ -->
+    <section class="slide" id="slide-trends">
+      <div class="block-tag"><span class="square"></span> Block 3 | Futurology</div>
+      <h2>Future of Harness Evolution: <span class="brand-text">Architectural &amp; Conceptual Trends</span></h2>
+
+      <div class="trends-grid">
+        <div class="trend-card">
+          <div class="trend-card-header">
+            <i data-lucide="cpu" width="20" height="20" color="var(--brand-cyan-light)"></i>
+            <span>1. Native &ldquo;Agent OS&rdquo;</span>
+          </div>
+          <div class="trend-card-desc">
+            <strong>Agent-First Infrastructure:</strong> Specialized lightweight kernels where filesystems, schedulers, and semantic indexes are built natively for agent interaction.<br>
+            <strong>The Compiling Harness:</strong> Assembles exact context, tools, and memory just-in-time for each execution.
+          </div>
+        </div>
+
+        <div class="trend-card">
+          <div class="trend-card-header">
+            <i data-lucide="server" width="20" height="20" color="var(--accent-blue)"></i>
+            <span>2. Harness-as-a-Service (HaaS)</span>
+          </div>
+          <div class="trend-card-desc">
+            <strong>Standardized Runtimes:</strong> Pre-packaged SDK runtimes providing loop, sandbox, and context primitives out of the box.<br>
+            <strong>Harness Templates:</strong> Pre-defined bundles constraining agent output to exact system topologies (e.g. standard API microservices).
+          </div>
+        </div>
+
+        <div class="trend-card">
+          <div class="trend-card-header">
+            <i data-lucide="refresh-cw" width="20" height="20" color="var(--accent-emerald)"></i>
+            <span>3. Self-Evolving Harnesses</span>
+          </div>
+          <div class="trend-card-desc">
+            <strong>Recursive Meta-Learning:</strong> Harnesses rewrite the rules governing how they self-improve, based on real-time execution feedback.<br>
+            <strong>Trace-Driven Pipelines:</strong> Agentic proposers analyze failed traces to automatically compile better topologies.
+          </div>
+        </div>
+
+        <div class="trend-card">
+          <div class="trend-card-header">
+            <i data-lucide="git-fork" width="20" height="20" color="var(--accent-orange-light)"></i>
+            <span>4. Multi-Agent &amp; Meta-Harnessing</span>
+          </div>
+          <div class="trend-card-desc">
+            <strong>Decoupled Context Windows:</strong> Splits workflows into specialized nodes (Planner &rarr; Generator &rarr; Evaluator) to eliminate context rot.<br>
+            <strong>Maker-Checker Split:</strong> Independent evaluator agents or deterministic suites hold absolute veto power.
+          </div>
+        </div>
+
+        <div class="trend-card" style="grid-column: span 2;">
+          <div class="trend-card-header">
+            <i data-lucide="shield-alert" width="20" height="20" color="var(--accent-rose)"></i>
+            <span>5. Motivation Boundary &amp; Adversarial Security</span>
+          </div>
+          <div class="trend-card-desc">
+            <strong>Engineers as Directors:</strong> Humans transition to designing specifications, orchestrating agent swarms, and validating diffs.<br>
+            <strong>Motivational Boundary:</strong> Models lack intrinsic motivation; humans define the &ldquo;why&rdquo; while the self-correcting harness manages the &ldquo;how.&rdquo;<br>
+            <strong>Security Builders:</strong> Continuous Red Team agent swarms probe the system while Blue Team defenders write and commit security patches.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Slide 14: Manifesto ============ -->
+    <section class="slide" id="slide-manifesto">
+      <div class="manifesto-container">
+        <div class="manifesto-top-tag">
+          The future of agentic engineering <span class="orange-text">lives outside the weights</span>
+        </div>
+
+        <div class="manifesto-hero-title">
+          Stop waiting for the next model upgrade to fix your architecture.<span class="cursor-block"></span>
+        </div>
+
+        <div class="manifesto-sub-desc">
+          The gap between what today&rsquo;s models can do, and what you see them doing, is a harness gap.<br>
+          <strong style="color:#fff;">Harness the machine. Let the machine optimize the harness.</strong>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer navigation -->
+  <footer class="controls">
+    <div class="key-hints">
+      <span class="key-hint"><kbd>&larr;</kbd> <kbd>&rarr;</kbd> Navigate</span>
+      <span class="key-hint"><kbd>Space</kbd> Next</span>
+    </div>
+
+    <div class="footer-right">
+      <span id="slide-counter" aria-live="polite"></span>
+      <div class="nav-btn-group">
+        <button class="nav-btn" id="prev-btn" type="button" aria-label="Previous slide"><i data-lucide="chevron-left" width="20" height="20"></i></button>
+        <button class="nav-btn" id="next-btn" type="button" aria-label="Next slide"><i data-lucide="chevron-right" width="20" height="20"></i></button>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    'use strict';
+
+    /* ============================================================
+       Single source of truth for interactive slide content.
+       (Previously duplicated between visible HTML and onclick strings.)
+       ============================================================ */
+
+    const TIER_COLORS = {
+      core: 'var(--brand-cyan-light)',
+      dev: 'var(--accent-blue)',
+      cloud: 'var(--accent-emerald)'
+    };
+
+    // Slide 9 — anatomy planets (slide "Anatomy grid" content folded into descriptions)
+    const SUN = {
+      title: 'LLM Intelligence Core',
+      tier: 'core',
+      desc: 'The central reasoning core: a stateless, probabilistic text processor. Powerful, but a hot-swappable part — every other capability comes from the harness around it.'
+    };
+
+    const ORBITS = [
+      {
+        el: 'orbit1', tier: 'core', borderColor: 'var(--brand-cyan)', iconColor: 'var(--brand-cyan-light)',
+        planets: [
+          { pos: 'p-n', icon: 'file-text', label: 'Instructions / Rules', title: 'Instructions / Rule Files',
+            desc: 'Defines identity, behavioral directives, and role boundaries: system prompt, AGENTS.md / CLAUDE.md, skill files, and sub-agent prompts.' },
+          { pos: 'p-s', icon: 'wrench', label: 'Tools & MCP', title: 'Tool Registry & MCP Servers',
+            desc: 'Filesystem I/O, shell execution, web search, and external MCP servers — plus the prose that tells the model when and how to call each one.' },
+          { pos: 'p-w', icon: 'git-merge', label: 'Orchestration & Loop', title: 'Orchestration, Loop & Stop Conditions',
+            desc: 'The agent loop itself: sub-agent spawning, model routing, and hand-offs — governed by turn limits, stop criteria, convergence detection, and error-recovery handlers.' },
+          { pos: 'p-e', icon: 'shield', label: 'Guardrails', title: 'Guardrails, Permissions & Hooks',
+            desc: 'Deterministic code at lifecycle points (before a tool call, after a file edit, before a commit), scope boundaries, and Plan/Agent dual modes.' }
+        ]
+      },
+      {
+        el: 'orbit2', tier: 'dev', borderColor: 'var(--accent-blue)', iconColor: 'var(--accent-blue)',
+        planets: [
+          { pos: 'p-n', icon: 'terminal', label: 'CLI / IDE', title: 'CLI / IDE Integration',
+            desc: 'Local developer terminal subprocesses, editor extensions, and real-time interactive debugging.' },
+          { pos: 'p-s', icon: 'settings', label: 'Config', title: 'Deployment Config',
+            desc: 'Hot-swappable model provider endpoints, environment profiles, and token budget throttling.' },
+          { pos: 'p-w', icon: 'database', label: 'Memory Store', title: 'State, Session & Memory',
+            desc: 'Episodic turn history and state machines for deterministic memory; virtual-memory paging between the active context window and persistent vector/disk stores.' },
+          { pos: 'p-e', icon: 'flask-conical', label: 'Eval & Test', title: 'Eval & Testing',
+            desc: 'Regression benchmark runners, synthetic test generation, and automated assertion gates.' }
+        ]
+      },
+      {
+        el: 'orbit3', tier: 'cloud', borderColor: 'var(--accent-emerald)', iconColor: 'var(--accent-emerald)',
+        planets: [
+          { pos: 'p-n', icon: 'server', label: 'Runtimes', title: 'Managed Sandboxed Runtimes',
+            desc: 'Isolated execution environments where agent code actually runs: containers, microVMs, and gVisor-style sandboxes.' },
+          { pos: 'p-s', icon: 'cpu', label: 'Scaling', title: 'Service & Scaling',
+            desc: 'Swarm concurrency load balancers, queue routing, and enterprise multi-agent clustering.' },
+          { pos: 'p-e', icon: 'activity', label: 'Tracing', title: 'Observability & Tracing',
+            desc: 'Full-trace invocation telemetry: step logging, token/cost/latency metering, rollback capability, and trajectory-drift monitoring.' }
+        ]
+      }
+    ];
+
+    // Slide 12 — core components ("bridges"); the research team focus list
+    const BRIDGES = [
+      { num: 1, icon: 'folder-git-2', color: 'var(--accent-rose)',
+        pill: 'Filesystem + Git', outcomeTitle: 'Durable Data', outcomeSub: 'JSONL Persistence & Replay',
+        badge: 'Durable Data Storage', title: 'Filesystem + Git',
+        mech: 'Session Persistence & JSONL Replay Logs',
+        desc: 'Allows the agent to manipulate large multi-file codebases past prompt limits. Continuous append-only JSONL logging guarantees atomic crash-replay recovery without losing progress.' },
+      { num: 2, icon: 'terminal', color: 'var(--accent-amber)',
+        pill: 'Bash + Code Execution', outcomeTitle: 'Execute Code', outcomeSub: 'The Loop & Tool Engine',
+        badge: 'Active Code Execution', title: 'Bash + Code Execution',
+        mech: 'The Autonomous Loop Engine',
+        desc: 'Provides a persistent execution loop driving compilers, linters, and runtime test binaries with automatic stdout/stderr feedback.' },
+      { num: 3, icon: 'shield-check', color: 'var(--accent-emerald)',
+        pill: 'Sandboxed Environments + Tooling', outcomeTitle: 'Safe Defaults', outcomeSub: 'Clearance & Safety Gates',
+        badge: 'Safe Defaults', title: 'Sandboxed Environments + Tooling',
+        mech: 'Clearance Tiers & Pre-Tool Hooks',
+        desc: 'Enforces strict isolation with pre-execution safety interceptors and dynamic human-in-the-loop approvals for destructive mutations.' },
+      { num: 4, icon: 'globe', color: 'var(--accent-blue)',
+        pill: 'Memory Files + Web Search + MCPs', outcomeTitle: 'New Knowledge', outcomeSub: 'Dynamic Rule Assembly',
+        badge: 'New Knowledge Retrieval', title: 'Memory Files + Web Search + MCPs',
+        mech: 'Dynamic Workspace Assembly & Prefix Caching',
+        desc: 'Discovers CLAUDE.md / AGENTS.md and connects live MCP servers while preserving cache tokens — letting the agent learn past its training cutoff.' },
+      { num: 5, icon: 'minimize-2', color: 'var(--brand-cyan-light)',
+        pill: 'Compaction + Tool Offloading + Skills', outcomeTitle: 'Long Context', outcomeSub: 'Compaction & Sub-Agents',
+        badge: 'Long-Horizon Context', title: 'Compaction + Tool Offloading + Skills',
+        mech: 'Context Compaction & Sub-Agent Workers',
+        desc: 'Deploys synthetic compaction and isolated worker sub-agents (spawn → restrict → collect) to stay coherent across 30+ turns.' },
+      { num: 6, icon: 'refresh-cw', color: 'var(--accent-violet)',
+        pill: 'Continuous Loops + Planning + Verification', outcomeTitle: 'Reliable Outcomes', outcomeSub: 'Zero-Trust Exit Code 0',
+        badge: 'Reliable Outcomes', title: 'Continuous Loops + Planning + Verification',
+        mech: 'Post-Tool Sensors & Zero-Trust Exit Codes',
+        desc: 'Continuous re-prompt loops ("Ralph loops") with a strict maker-checker split: success is proven by automated tests and machine exit codes, never by the model declaring itself done.' },
+      { num: 7, icon: 'activity', color: 'var(--brand-cyan)',
+        pill: 'Observability & Introspection', outcomeTitle: 'Transparency', outcomeSub: 'Telemetry & Audit Traces',
+        badge: 'Continuous Transparency', title: 'Observability & Introspection',
+        mech: 'Distributed Telemetry & Lifecycle Traces',
+        desc: 'Full event-lineage tracing, token tracking, latency metrics, and execution replay make the agent transparent and auditable.' },
+      { num: 8, icon: 'git-pull-request', color: 'var(--accent-orange-light)',
+        pill: 'Model Router', outcomeTitle: 'Tokenomics', outcomeSub: 'Cost-Effective Task Routing',
+        badge: 'Tokenomics & Cost Optimization', title: 'Model Router',
+        mech: 'Dynamic Task Triage & Model Gateway',
+        desc: 'Intelligent routing dispatches sub-tasks to smaller, cost-effective models capable of solving specific sub-problems, minimizing token burn.' }
+    ];
+
+    /* ============================================================
+       Deck controller
+       ============================================================ */
+
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    const counterDisplay = document.getElementById('slide-counter');
+    let currentSlide = 0;
+
+    function updateDeck() {
+      slides.forEach((slide, index) => {
+        slide.classList.toggle('active', index === currentSlide);
+      });
+      counterDisplay.textContent =
+        String(currentSlide + 1).padStart(2, '0') + ' / ' + String(totalSlides).padStart(2, '0');
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides - 1) { currentSlide++; updateDeck(); }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) { currentSlide--; updateDeck(); }
+    }
+
+    const nextBtn = document.getElementById('next-btn');
+    const prevBtn = document.getElementById('prev-btn');
+
+    nextBtn.addEventListener('click', () => { nextSlide(); nextBtn.blur(); });
+    prevBtn.addEventListener('click', () => { prevSlide(); prevBtn.blur(); });
+
+    window.addEventListener('keydown', (e) => {
+      // Don't hijack keys while an interactive control has focus
+      const tag = e.target.tagName;
+      if (tag === 'BUTTON' || tag === 'INPUT') return;
+
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault(); // prevent page scroll / double-firing
+        nextSlide();
+      } else if (e.key === 'ArrowLeft') {
+        prevSlide();
+      }
+    });
+
+    /* ============================================================
+       Slide 4 — Chart + honest simulator
+       Harness model: each step passes a verification gate;
+       on failure the step is retried once → p_step = 1 - (1-p)^2
+       ============================================================ */
+
+    const RETRIES = 2; // attempts per step (1 initial + 1 retry after verification catch)
+    const stepPoints = [1, 5, 10, 20, 30, 40];
+
+    function unassistedCurve(p) { return stepPoints.map(n => Math.pow(p, n) * 100); }
+    function harnessCurve(p) {
+      const q = 1 - Math.pow(1 - p, RETRIES);
+      return stepPoints.map(n => Math.pow(q, n) * 100);
+    }
+
+    const ctxFailure = document.getElementById('failureChart').getContext('2d');
+    new Chart(ctxFailure, {
+      type: 'line',
+      data: {
+        labels: stepPoints.map(n => n + (n === 1 ? ' Step' : ' Steps')),
+        datasets: [
+          {
+            label: 'Unassisted (p=0.95)',
+            data: unassistedCurve(0.95).map(v => +v.toFixed(1)),
+            borderColor: '#f43f5e',
+            backgroundColor: 'rgba(244, 63, 94, 0.1)',
+            borderWidth: 2, tension: 0.3, fill: true
+          },
+          {
+            label: 'Unassisted (p=0.98)',
+            data: unassistedCurve(0.98).map(v => +v.toFixed(1)),
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            borderWidth: 2, tension: 0.3, fill: true
+          },
+          {
+            label: 'Harness + Verification (p=0.98)',
+            data: harnessCurve(0.98).map(v => +v.toFixed(1)),
+            borderColor: '#06b6d4',
+            backgroundColor: 'rgba(6, 182, 212, 0.2)',
+            borderWidth: 3, tension: 0.1, fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            min: 0, max: 100,
+            title: { display: true, text: 'Success Prob (%)', color: '#94a3b8', font: { size: 10 } },
+            grid: { color: 'rgba(51, 65, 85, 0.4)' },
+            ticks: { color: '#94a3b8', font: { size: 10 } }
+          },
+          x: {
+            grid: { color: 'rgba(51, 65, 85, 0.4)' },
+            ticks: { color: '#94a3b8', font: { size: 10 } }
+          }
+        },
+        plugins: {
+          legend: { labels: { color: '#e2e8f0', font: { size: 10 }, boxWidth: 12 } }
+        }
+      }
+    });
+
+    const stepsInput = document.getElementById('stepsInput');
+    const accInput = document.getElementById('accInput');
+    const stepsVal = document.getElementById('stepsVal');
+    const accVal = document.getElementById('accVal');
+    const unassistedRes = document.getElementById('unassistedRes');
+    const harnessRes = document.getElementById('harnessRes');
+    const diffRes = document.getElementById('diffRes');
+
+    function updateSimulator() {
+      const N = parseInt(stepsInput.value, 10);
+      const p = parseFloat(accInput.value) / 100.0;
+
+      stepsVal.textContent = N + (N === 1 ? ' Step' : ' Steps');
+      accVal.textContent = (p * 100).toFixed(1) + '%';
+
+      const unassisted = Math.pow(p, N) * 100.0;
+      const q = 1 - Math.pow(1 - p, RETRIES);   // same honest model as the chart
+      const harness = Math.pow(q, N) * 100.0;
+      const diff = harness - unassisted;
+
+      unassistedRes.textContent = unassisted.toFixed(1) + '%';
+      harnessRes.textContent = harness.toFixed(1) + '%';
+      diffRes.textContent = (diff >= 0 ? '+' : '') + diff.toFixed(1) + '%';
+    }
+
+    stepsInput.addEventListener('input', updateSimulator);
+    accInput.addEventListener('input', updateSimulator);
+    updateSimulator();
+
+    /* ============================================================
+       Slide 9 — solar system anatomy (rendered from data)
+       ============================================================ */
+
+    const inspectTitle = document.getElementById('inspectTitle');
+    const inspectDesc = document.getElementById('inspectDesc');
+    const inspectCard = document.getElementById('inspectCard');
+
+    function showInspection(item, tier) {
+      const color = TIER_COLORS[tier] || 'var(--brand-cyan-light)';
+      inspectTitle.innerHTML =
+        '<i data-lucide="check-circle-2" width="20" height="20" style="color:' + color + '"></i> ' +
+        '<span style="color:' + color + '">' + item.title + '</span>';
+      inspectDesc.textContent = item.desc;
+      inspectCard.style.borderColor = color;
+      lucide.createIcons();
+    }
+
+    function clearActivePlanets() {
+      document.querySelectorAll('.planet').forEach(p => p.classList.remove('active-planet'));
+    }
+
+    ORBITS.forEach(orbit => {
+      const track = document.getElementById(orbit.el);
+      orbit.planets.forEach(planet => {
+        const pos = document.createElement('div');
+        pos.className = 'planet-pos ' + planet.pos;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'planet';
+        btn.setAttribute('aria-label', 'Inspect ' + planet.title);
+        btn.innerHTML =
+          '<span class="planet-badge" style="border-color:' + orbit.borderColor + ';">' +
+          '<i data-lucide="' + planet.icon + '" width="14" height="14" color="' + orbit.iconColor + '"></i> ' +
+          planet.label + '</span>';
+
+        btn.addEventListener('click', () => {
+          clearActivePlanets();
+          btn.classList.add('active-planet');
+          showInspection(planet, orbit.tier);
+        });
+
+        pos.appendChild(btn);
+        track.appendChild(pos);
+      });
+    });
+
+    document.getElementById('sunCore').addEventListener('click', () => {
+      clearActivePlanets();
+      showInspection(SUN, SUN.tier);
+    });
+
+    // Orbit pause/resume
+    let isOrbiting = true;
+    const toggleText = document.getElementById('toggleText');
+    const orbitToggleBtn = document.getElementById('orbitToggleBtn');
+
+    orbitToggleBtn.addEventListener('click', () => {
+      isOrbiting = !isOrbiting;
+      const state = isOrbiting ? 'running' : 'paused';
+      document.querySelectorAll('.orbit-track, .planet').forEach(el => {
+        el.style.animationPlayState = state;
+      });
+      toggleText.textContent = isOrbiting ? 'Pause Orbits' : 'Resume Orbits';
+      const icon = document.getElementById('toggleIcon');
+      icon.setAttribute('data-lucide', isOrbiting ? 'pause' : 'play');
+      lucide.createIcons();
+    });
+
+    /* ============================================================
+       Slide 12 — core components (rendered from data)
+       ============================================================ */
+
+    const bridgesStack = document.getElementById('bridgesStack');
+    const bridgeDetailCard = document.getElementById('bridgeDetailCard');
+    const bridgeBadge = document.getElementById('bridgeBadge');
+    const bridgeTitle = document.getElementById('bridgeTitle');
+    const bridgeMech = document.getElementById('bridgeMech');
+    const bridgeDesc = document.getElementById('bridgeDesc');
+
+    function showBridge(b) {
+      bridgeDetailCard.style.borderLeftColor = b.color;
+      bridgeBadge.textContent = 'Component ' + b.num + ' \u2022 ' + b.badge;
+      bridgeTitle.textContent = b.title;
+      bridgeMech.textContent = 'Underlying Harness Engine: ' + b.mech;
+      bridgeDesc.textContent = b.desc;
+    }
+
+    BRIDGES.forEach((b, idx) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'bridge-item' + (idx === 0 ? ' active-bridge' : '');
+      btn.innerHTML =
+        '<span class="bridge-tech-pill">' +
+        '<i data-lucide="' + b.icon + '" width="18" height="18" color="' + b.color + '"></i>' +
+        '<span>' + b.num + '. ' + b.pill + '</span></span>' +
+        '<span class="bridge-outcome">' +
+        '<span class="bridge-outcome-title" style="color:' + b.color + '; display:block;">' + b.outcomeTitle + '</span>' +
+        '<span class="bridge-outcome-sub" style="display:block;">' + b.outcomeSub + '</span></span>';
+
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.bridge-item').forEach(el => el.classList.remove('active-bridge'));
+        btn.classList.add('active-bridge');
+        showBridge(b);
+      });
+
+      bridgesStack.appendChild(btn);
+    });
+
+    showBridge(BRIDGES[0]); // detail panel populated from the same data — no duplicated copy
+
+    /* ============================================================
+       Init
+       ============================================================ */
+    updateDeck();
+    lucide.createIcons();
+  </script>
+</body>
+</html>
